@@ -701,6 +701,49 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
             
+            # Profile Details & Extracted Resume Text side-by-side
+            st.markdown("---")
+            st.subheader("📋 Resume Analysis Summary")
+            col_p_sum, col_p_text = st.columns(2)
+            
+            with col_p_sum:
+                with st.container(border=True):
+                    st.markdown("#### Profile Details Summary")
+                    st.markdown(f"""
+                    <div style="font-size: 0.95rem; line-height: 2.2;">
+                        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                            <span>👤 Full Name</span>
+                            <strong>{resume_results['name']}</strong>
+                        </div>
+                        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                            <span>📧 Email Address</span>
+                            <span>{resume_results['email']}</span>
+                        </div>
+                        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                            <span>🧭 Target / Aiming Career</span>
+                            <span style="color: #8b5cf6; font-weight: bold;">{resume_results['career']}</span>
+                        </div>
+                        <div style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                            <span>📈 Alignment Score</span>
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #8b5cf6; padding: 2px 8px; border-radius: 4px; font-weight: bold;">{resume_results['match_score']}%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>❤️ Interests & Goals</span>
+                            <span style="color: #94a3b8; max-width: 300px; text-align: right;">{resume_results['interests'] if resume_results['interests'] else 'None specified'}</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+            with col_p_text:
+                with st.container(border=True):
+                    st.markdown("#### Parsed Document Raw Text")
+                    st.markdown(f"""
+                    <div style="max-height: 220px; overflow-y: auto; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">{resume_results['input_skills']}</div>
+                    <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 0.5rem; font-style: italic;">
+                        ℹ️ This shows the exact textual content processed by the parsing and analysis engine.
+                    </span>
+                    """, unsafe_allow_html=True)
+            
             st.markdown("---")
             st.subheader("📚 Recommended Learning Resources")
             col_r_courses, col_r_certs = st.columns(2)
