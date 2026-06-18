@@ -157,31 +157,29 @@ def parse_resume_text(text, api_key=None):
         try:
             from groq import Groq
             client = Groq(api_key=api_key)
-            prompt = f"""
-You are an expert Applicant Tracking System (ATS) parsing assistant. Your task is to extract candidate details from the provided resume text.
-
-Resume Text:
-\"\"\"
-{text_clean}
-\"\"\"
-
-Extract the following details and return ONLY a valid JSON object. Do not wrap it in markdown formatting (like ```json).
-Fields to extract:
-1. "name": The candidate's full name. Look at the very top of the resume. If missing or unclear, generate a sensible one based on context.
-2. "email": The candidate's email address.
-3. "skills": An array of strings containing specific technologies, programming languages, libraries, tools, or domain concepts.
-4. "interests": A single string describing their main field of interest or career goals (e.g., "Web Development", "Data Science", "Embedded Systems", "Product Management"). Keep it short and matching a common tech/career domain.
-
-Example JSON output structure:
-{{
-  "name": "Alex Mercer",
-  "email": "alex.mercer@gmail.com",
-  "skills": ["Python", "Docker", "Machine Learning", "Git"],
-  "interests": "Data Science & Machine Learning"
-}}
-"""
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict ATS resume parsing assistant. You MUST extract candidate details and return "
+                        "ONLY a valid JSON object matching this schema:\n"
+                        "{\n"
+                        '  "name": "Full Name (string)",\n'
+                        '  "email": "Email Address (string)",\n'
+                        '  "skills": ["Skill1", "Skill2", ...] (array of strings),\n'
+                        '  "interests": "Main field of interest/career goal (string)"\n'
+                        "}\n"
+                        "Do not wrap it in markdown codeblocks (like ```json), do not write any preamble, intro, or explanation. "
+                        "If any field is missing, generate a sensible default based on context (e.g. 'Unknown Candidate' for name)."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Extract candidate details from the following resume text:\n\n{text_clean}"
+                }
+            ]
             completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
                 model="llama-3.1-8b-instant",
                 temperature=0.0,
                 response_format={"type": "json_object"},

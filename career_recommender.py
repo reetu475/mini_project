@@ -70,14 +70,28 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
         import re
         
         client = Groq(api_key=api_key)
-        prompt = f"""
-Based on these skills: {user_skills} and these interests: {user_interests}, recommend the single best career path (e.g. "Embedded Systems Engineer", "Brand Manager", "Software Engineer").
-Also compute a compatibility score between 0 and 100 based on how well their current skills align with this recommended career.
-Return ONLY a JSON object with keys "career" and "score" (a float). Do not include markdown codeblocks or explanation.
-Example response: {{"career": "Embedded Systems Engineer", "score": 85.0}}
-"""
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert career recommender. You MUST analyze the candidate's skills and interests, "
+                    "recommend the single best career path (e.g. 'Data Scientist', 'DevOps Engineer', 'Embedded Systems Engineer'), "
+                    "and calculate a compatibility score between 0 and 100 representing how well their skills match the career. "
+                    "You MUST return ONLY a valid JSON object matching this schema:\n"
+                    "{\n"
+                    '  "career": "Recommended Career Name",\n'
+                    '  "score": 85.0\n'
+                    "}\n"
+                    "Do not wrap it in markdown codeblocks (like ```json), do not write any preamble, intro, or explanation."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Candidate Skills: {user_skills}\nCandidate Interests: {user_interests}"
+            }
+        ]
         completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             model="llama-3.1-8b-instant",
             temperature=0.2,
             response_format={"type": "json_object"},
@@ -151,15 +165,26 @@ def calculate_compatibility_score_with_groq(user_skills, target_career, api_key)
         import re
         
         client = Groq(api_key=api_key)
-        prompt = f"""
-Calculate a skill alignment compatibility score between 0 and 100 for a candidate aiming to become a "{target_career}".
-Candidate Skills: {user_skills}
-
-Return ONLY a JSON object with key "score" (a float). Do not include markdown codeblocks or explanation.
-Example response: {{"score": 78.5}}
-"""
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a strict ATS parsing assistant. You MUST calculate a compatibility score between "
+                    "0 and 100 based on how well the candidate's skills align with the target career. You MUST return "
+                    "ONLY a valid JSON object matching this schema:\n"
+                    "{\n"
+                    '  "score": 78.5\n'
+                    "}\n"
+                    "Do not wrap it in markdown codeblocks (like ```json), do not write any preamble, intro, or explanation."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Target Career: '{target_career}'\nCandidate Skills: {user_skills}"
+            }
+        ]
         completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             model="llama-3.1-8b-instant",
             temperature=0.0,
             response_format={"type": "json_object"},
