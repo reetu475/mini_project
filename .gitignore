@@ -1,0 +1,26 @@
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment secrets
+.env
+
+# Databases & local indexes
+users.db
+users.db-wal
+users.db-shm
+chroma_db/
+test_chroma_db/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE and Agent configurations
+.vscode/
+.idea/
+.agents/
+.gitattributes

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathFinder | Personalized Career & Educational Advisor</title>
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for modern dashboard icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="glow-bg">
+        <div class="blob blob-purple"></div>
+        <div class="blob blob-blue"></div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="main-header animate-fade-in">
+            <div class="logo">
+                <i class="fa-solid fa-compass-drafting logo-icon"></i>
+                <span class="logo-text">Path<span>Finder</span></span>
+            </div>
+            <p class="subtitle">Personalized Career Discovery & Educational Mapping Engine</p>
+        </header>
+
+        <!-- Forms Grid Section -->
+        <div class="forms-grid">
+            <!-- Left Card: Manual Profile Form -->
+            <main class="form-card glass-card manual-profile-card animate-slide-up">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-pen-to-square" style="color: var(--primary-color); margin-right: 0.5rem;"></i> Manual Profile</h2>
+                    <p>Provide details manually to construct your career alignment map.</p>
+                </div>
+
+                <!-- Flash Error Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert-container">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <i class="fa-solid fa-circle-exclamation alert-icon"></i>
+                                    <span>{{ message }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                
+                <form id="advisor-form" action="{{ url_for('recommend') }}" method="POST" class="profile-form">
+                    <input type="hidden" id="associated_resume_id" name="associated_resume_id" value="">
+                    <input type="hidden" id="manual_target_career" name="target_career" value="">
+                    <!-- Row 1: Name and Email -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">
+                                <i class="fa-regular fa-user"></i> Full Name
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="text" id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name">
+                                <span class="validity-indicator"><i class="fa-solid fa-circle-notch spinner"></i></span>
+                            </div>
+                            <span class="field-error" id="name-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="fa-regular fa-envelope"></i> Email Address
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="email" id="email" name="email" required placeholder="alex@example.com" autocomplete="email">
+                                <span class="validity-indicator"><i class="fa-solid fa-circle-notch spinner"></i></span>
+                            </div>
+                            <span class="field-error" id="email-error"></span>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Skills Profile -->
+                    <div class="form-group">
+                        <label for="skills_text">
+                            <i class="fa-solid fa-laptop-code"></i> Skills & Experience
+                        </label>
+                        <div class="input-wrapper">
+                            <textarea id="skills_text" name="skills_text" required rows="4" 
+                                placeholder="Describe your current skills, programming languages, tools, or past projects."></textarea>
+                        </div>
+                        <span class="input-hint">Our regex extractor will parse this text for industry-standard skills (e.g. Python, SQL, Java, ML, React).</span>
+                    </div>
+
+                    <!-- Row 3: Interests / Academic Background -->
+                    <div class="form-group">
+                        <label for="interests">
+                            <i class="fa-solid fa-graduation-cap"></i> Interests & Educational Goals
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" id="interests" name="interests" placeholder="e.g. Artificial Intelligence, Data visualization, backend web services">
+                        </div>
+                        <span class="input-hint">Helps refine ChromaDB course recommendations.</span>
+                    </div>
+
+
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <span>Generate Advisor Map</span>
+                        <i class="fa-solid fa-arrow-right-long arrow-icon"></i>
+                    </button>
+                </form>
+            </main>
+
+            <!-- Right Card: Upload Resume Form -->
+            <main class="form-card glass-card resume-upload-card animate-slide-up" style="animation-delay: 0.05s;">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-file-invoice" style="color: var(--secondary-color); margin-right: 0.5rem;"></i> Upload Resume</h2>
+                    <p>Upload your resume to extract details or analyze your path directly.</p>
+                </div>
+                
+                <form id="resume-form" action="{{ url_for('upload_resume') }}" method="POST" enctype="multipart/form-data" class="profile-form">
+                    <!-- File Upload Area -->
+                    <div class="form-group">
+                        <label>
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Resume Document
+                        </label>
+                        <div class="file-drop-zone" id="drop-zone">
+                            <div class="drop-zone-icons">
+                                <i class="fa-solid fa-file-pdf file-icon pdf-color"></i>
+                                <i class="fa-solid fa-file-word file-icon word-color"></i>
+                                <i class="fa-solid fa-file-lines file-icon txt-color"></i>
+                            </div>
+                            <p class="drop-zone-text">Drag & drop your resume file here or <span class="browse-link">browse</span></p>
+                            <p class="drop-zone-sub">Supported formats: PDF, DOCX, TXT (Max 5MB)</p>
+                            <input type="file" id="resume_file" name="resume_file" accept=".pdf,.docx,.txt" required style="display: none;">
+                            <div class="selected-file-info" id="file-info" style="display: none;">
+                                <i class="fa-solid fa-paperclip"></i>
+                                <span id="file-name">filename.pdf</span>
+                                <button type="button" class="remove-file-btn" onclick="clearSelectedFile(event)"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Target / Aiming Career (Optional) -->
+                    <div class="form-group">
+                        <label for="target_career">
+                            <i class="fa-solid fa-crosshairs"></i> Target / Aiming Career <span class="optional-tag">(Optional)</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" id="target_career" name="target_career" placeholder="e.g. Data Scientist, Full Stack Developer, DevOps Engineer">
+                        </div>
+                        <span class="input-hint">Aligns your resume compatibility score and learning path against this specific role. If empty, we automatically predict a role.</span>
+                    </div>
+
+
+
+                    <!-- Submit Buttons Row -->
+                    <div class="form-actions-row" style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="submit-btn" id="resume-submit-btn" style="flex: 1; margin-top: 0;">
+                            <span>Analyze Directly</span>
+                            <i class="fa-solid fa-microchip process-icon"></i>
+                        </button>
+                        
+                        <button type="button" class="submit-btn outline-btn" id="resume-autofill-btn" onclick="triggerAutofill()" style="flex: 1; margin-top: 0; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-primary);">
+                            <span>Extract & Edit Form</span>
+                            <i class="fa-solid fa-wand-magic-sparkles process-icon"></i>
+                        </button>
+                    </div>
+                </form>
+            </main>
+        </div>
+
+        <!-- Saved Profiles Section -->
+        {% if profiles %}
+        <section class="saved-profiles-card glass-card animate-slide-up" style="animation-delay: 0.15s; padding: 2.5rem; margin-top: 1rem;">
+            <div class="card-header" style="margin-bottom: 2rem;">
+                <h2>Saved Advisor Profiles</h2>
+                <p>Access previously generated alignment maps and recommended career pathways.</p>
+            </div>
+            
+            <div class="profiles-grid">
+                {% for profile in profiles %}
+                <div class="profile-card glass-card">
+                    <div class="profile-card-header">
+                        <div class="profile-avatar">
+                            <i class="fa-solid fa-user-graduate"></i>
+                        </div>
+                        <div class="profile-title">
+                            <h3>{{ profile.name }}</h3>
+                            <span class="profile-email">{{ profile.email }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Recommended Career:</span>
+                            <span class="detail-value text-highlight">{{ profile.recommended_career }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Skill Alignment:</span>
+                            <span class="detail-value score-badge">{{ profile.match_score }}%</span>
+                        </div>
+                        {% if profile.interests %}
+                        <div class="detail-row">
+                            <span class="detail-label">Interests:</span>
+                            <span class="detail-value interests-text" title="{{ profile.interests }}">{{ profile.interests }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="profile-actions">
+                        <a href="{{ url_for('view_profile', profile_id=profile.id) }}" class="view-profile-btn">
+                            <i class="fa-solid fa-map"></i> View Map
+                        </a>
+                        <form action="{{ url_for('delete_profile', profile_id=profile.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this profile?');">
+                            <button type="submit" class="delete-profile-btn" title="Delete Profile">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Footer -->
+        <footer class="main-footer animate-fade-in">
+            <p>&copy; 2026 PathFinder System. Powered by Flask, ChromaDB, and Groq LLMs.</p>
+        </footer>
+    </div>
+
+    <!-- Processing overlay for form submissions -->
+    <div class="processing-overlay" id="loading-overlay">
+        <div class="loader-card glass-card">
+            <div class="spinner-container">
+                <i class="fa-solid fa-compass-drafting spinner-icon"></i>
+            </div>
+            <h3>Analyzing Profile</h3>
+            <p id="loading-message">Synthesizing skills, mapping educational alignments, and compiling career pathways...</p>
+        </div>
+    </div>
+
+    <!-- Client-Side Asynchronous Validation Script -->
+    <script>
+
+
+
+
+        // Drag and drop events for drop-zone
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('resume_file');
+        const fileNameSpan = document.getElementById('file-name');
+        const fileInfoDiv = document.getElementById('file-info');
+
+        dropZone.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-file-btn')) return;
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                displaySelectedFile(fileInput.files[0]);
+            }
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                const validTypes = ['.pdf', '.docx', '.txt'];
+                const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+                
+                if (validTypes.includes(fileExt)) {
+                    fileInput.files = e.dataTransfer.files;
+                    displaySelectedFile(file);
+                } else {
+                    alert("Unsupported file format. Please upload a PDF, Word, or Text file.");
+                }
+            }
+        });
+
+        function displaySelectedFile(file) {
+            fileNameSpan.textContent = file.name + ' (' + formatBytes(file.size) + ')';
+            fileInfoDiv.style.display = 'flex';
+            dropZone.querySelectorAll('.drop-zone-icons, .drop-zone-text, .drop-zone-sub').forEach(el => el.style.opacity = '0.15');
+        }
+
+        function clearSelectedFile(event) {
+            if (event) event.stopPropagation();
+            fileInput.value = '';
+            fileInfoDiv.style.display = 'none';
+            dropZone.querySelectorAll('.drop-zone-icons, .drop-zone-text, .drop-zone-sub').forEach(el => el.style.opacity = '1');
+            document.getElementById('associated_resume_id').value = '';
+            document.getElementById('manual_target_career').value = '';
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // Loading Screen Management
+        const advisorForm = document.getElementById('advisor-form');
+        const resumeForm = document.getElementById('resume-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingMessage = document.getElementById('loading-message');
+
+        advisorForm.addEventListener('submit', (e) => {
+            if (advisorForm.checkValidity()) {
+                loadingMessage.textContent = "Synthesizing skills, mapping educational alignments, and compiling career pathways...";
+                loadingOverlay.classList.add('active');
+            }
+        });
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = type === 'success' 
+                ? '<i class="fa-solid fa-circle-check" style="color: var(--success-color);"></i>'
+                : '<i class="fa-solid fa-circle-exclamation" style="color: var(--error-color);"></i>';
+                
+            toast.innerHTML = `
+                ${icon}
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('toast-fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Trigger validation on form fields manually
+        async function triggerFieldValidation(inputElement, fieldName, errorElementId) {
+            const errorElement = document.getElementById(errorElementId);
+            const indicator = inputElement.nextElementSibling;
+            const value = inputElement.value.trim();
+            if (!value) {
+                indicator.classList.remove('active');
+                errorElement.innerText = '';
+                return;
+            }
+            
+            indicator.classList.add('active');
+            indicator.innerHTML = '<i class="fa-solid fa-circle-notch spinner"></i>';
+            indicator.style.color = '#7c3aed';
+            
+            try {
+                const response = await fetch('/api/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        field: fieldName,
+                        value: value
+                    })
+                });
+                const data = await response.json();
+                
+                indicator.classList.add('active');
+                if (data.valid) {
+                    indicator.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                    indicator.style.color = '#10b981';
+                    errorElement.innerText = '';
+                    inputElement.classList.remove('invalid-border');
+                    inputElement.classList.add('valid-border');
+                } else {
+                    indicator.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                    indicator.style.color = '#ef4444';
+                    errorElement.innerText = data.message;
+                    inputElement.classList.remove('valid-border');
+                    inputElement.classList.add('invalid-border');
+                }
+            } catch (e) {
+                console.error("Validation error: ", e);
+                indicator.classList.remove('active');
+            }
+        }
+
+        async function triggerAutofill() {
+            const resumeForm = document.getElementById('resume-form');
+            if (!resumeForm.checkValidity()) {
+                document.getElementById('resume_file').reportValidity();
+                return;
+            }
+            
+            loadingMessage.textContent = "Extracting resume details, processing PDF streams, and parsing candidate information...";
+            loadingOverlay.classList.add('active');
+            
+            const formData = new FormData(resumeForm);
+            
+            try {
+                const response = await fetch('/api/parse-resume', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                loadingOverlay.classList.remove('active');
+                
+                if (data.success) {
+                    // Pre-fill manual form inputs
+                    nameInput.value = data.name;
+                    emailInput.value = data.email;
+                    document.getElementById('skills_text').value = data.skills_text;
+                    
+                    // Set interests
+                    document.getElementById('interests').value = data.interests;
+                    
+                    // Set associated resume database ID
+                    document.getElementById('associated_resume_id').value = data.resume_profile_id;
+                    
+                    // Set target career in hidden field
+                    document.getElementById('manual_target_career').value = data.target_career || '';
+                    
+                    // Trigger validation checks
+                    triggerFieldValidation(nameInput, 'name', 'name-error');
+                    triggerFieldValidation(emailInput, 'email', 'email-error');
+                    
+                    // Highlight manual profile card
+                    const manualCard = document.querySelector('.manual-profile-card');
+                    manualCard.classList.remove('card-highlight-pulse');
+                    void manualCard.offsetWidth; // Force reflow
+                    manualCard.classList.add('card-highlight-pulse');
+                    
+                    // Toast success message
+                    showToast("Resume details successfully parsed and populated! Please review and click Generate.", "success");
+                    
+                    // Scroll to manual form for focus
+                    manualCard.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    showToast(data.error || "Failed to parse resume file.", "error");
+                }
+            } catch (err) {
+                loadingOverlay.classList.remove('active');
+                console.error("Error parsing resume via API:", err);
+                showToast("An error occurred during resume document uploading/parsing.", "error");
+            }
+        }
+
+        resumeForm.addEventListener('submit', (e) => {
+            if (resumeForm.checkValidity()) {
+                loadingMessage.textContent = "Extracting details from resume, running alignments, and generating your alignment map...";
+                loadingOverlay.classList.add('active');
+            }
+        });
+
+        // Asynchronous form validation helper for manual form
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+
+        function setupValidation(inputElement, fieldName, errorElementId) {
+            const errorElement = document.getElementById(errorElementId);
+            const indicator = inputElement.nextElementSibling;
+            let timeout = null;
+            
+            inputElement.addEventListener('input', () => {
+                clearTimeout(timeout);
+                indicator.classList.add('active');
+                indicator.innerHTML = '<i class="fa-solid fa-circle-notch spinner"></i>';
+                indicator.style.color = '#7c3aed';
+
+                timeout = setTimeout(async () => {
+                    const value = inputElement.value.trim();
+                    if (!value) {
+                        indicator.classList.remove('active');
+                        errorElement.innerText = '';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/validate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                field: fieldName,
+                                value: value
+                            })
+                        });
+                        const data = await response.json();
+                        
+                        indicator.classList.add('active');
+                        if (data.valid) {
+                            indicator.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+                            indicator.style.color = '#10b981'; // green
+                            errorElement.innerText = '';
+                            inputElement.classList.remove('invalid-border');
+                            inputElement.classList.add('valid-border');
+                        } else {
+                            indicator.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+                            indicator.style.color = '#ef4444'; // red
+                            errorElement.innerText = data.message;
+                            inputElement.classList.remove('valid-border');
+                            inputElement.classList.add('invalid-border');
+                        }
+                    } catch (e) {
+                        console.error("Validation error: ", e);
+                        indicator.classList.remove('active');
+                    }
+                }, 500);
+            });
+        }
+
+        setupValidation(nameInput, 'name', 'name-error');
+        setupValidation(emailInput, 'email', 'email-error');
+    </script>
+</body>
+</html>

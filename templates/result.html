@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Career Mapping | PathFinder</title>
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for dashboard icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+        .result-tabs .tab-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            color: var(--text-secondary);
+            padding: 0.8rem 2.2rem;
+            cursor: pointer;
+            font-family: var(--font-primary);
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.92rem;
+        }
+        .result-tabs .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+        .result-tabs .tab-btn.active {
+            background: var(--gradient-primary);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-bg">
+        <div class="blob blob-purple"></div>
+        <div class="blob blob-blue"></div>
+    </div>
+
+    <div class="app-container results-container">
+        <!-- Dashboard Navigation Header -->
+        <header class="dashboard-header animate-fade-in">
+            <div class="logo">
+                <i class="fa-solid fa-compass-drafting logo-icon"></i>
+                <span class="logo-text">Path<span>Finder</span></span>
+            </div>
+            <div class="user-badge">
+                <i class="fa-regular fa-circle-user user-icon"></i>
+                <div class="user-info">
+                    <span class="user-name" id="active-user-name">
+                        {% if active_tab == 'manual' and manual_results %}
+                            {{ manual_results.name }}
+                        {% elif resume_results %}
+                            {{ resume_results.name }}
+                        {% else %}
+                            PathFinder Candidate
+                        {% endif %}
+                    </span>
+                    <span class="user-email" id="active-user-email">
+                        {% if active_tab == 'manual' and manual_results %}
+                            {{ manual_results.email }}
+                        {% elif resume_results %}
+                            {{ resume_results.email }}
+                        {% else %}
+                            candidate@example.com
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Back Button & DB Status -->
+        <div class="nav-actions animate-fade-in">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <i class="fa-solid fa-arrow-left"></i> Modify Profile
+            </a>
+            
+            <div class="db-status-badge">
+                {% if using_nlp %}
+                <span class="status-nlp"><i class="fa-solid fa-brain"></i> spaCy NLP Pipeline Active</span>
+                {% endif %}
+                {% if using_chromadb %}
+                <span class="status-chroma"><i class="fa-solid fa-database"></i> ChromaDB Vector Index Active</span>
+                {% else %}
+                <span class="status-fallback"><i class="fa-solid fa-server"></i> Local Similarity Fallback</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Result Tabs Switcher -->
+        <div class="result-tabs animate-fade-in" style="display: flex; gap: 1rem; margin-bottom: 2.5rem; justify-content: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1.5rem;">
+            <button class="tab-btn {% if active_tab == 'manual' %}active{% endif %}" onclick="switchResultTab('manual')" id="manual-tab-btn">
+                <i class="fa-solid fa-pen-to-square"></i> Manual Form Results
+                {% if not manual_results %}
+                <span style="font-size: 0.7rem; opacity: 0.6; font-weight: normal;">(Not Run)</span>
+                {% endif %}
+            </button>
+            <button class="tab-btn {% if active_tab == 'resume' %}active{% endif %}" onclick="switchResultTab('resume')" id="resume-tab-btn">
+                <i class="fa-solid fa-file-invoice"></i> Resume Upload Results
+                {% if not resume_results %}
+                <span style="font-size: 0.7rem; opacity: 0.6; font-weight: normal;">(Not Run)</span>
+                {% endif %}
+            </button>
+        </div>
+
+        <!-- ================= MANUAL RESULTS CONTENT ================= -->
+        <div id="manual-result-content" class="tab-pane {% if active_tab == 'manual' %}active{% endif %}">
+            {% if manual_results %}
+                <!-- Dashboard Layout Grid -->
+                <div class="dashboard-grid">
+                    
+                    <!-- LEFT SECTION: Career recommendation & Match Score -->
+                    <div class="column-left animate-slide-up">
+                        
+                        <!-- Match Card -->
+                        <div class="glass-card career-match-card">
+                            <span class="card-tag">Core recommendation</span>
+                            <h3 class="career-title">{{ manual_results.career }}</h3>
+                            
+                            <!-- Score Meter -->
+                            <div class="gauge-wrapper">
+                                <div class="circle-gauge" style="--score-pct: {{ manual_results.match_score }}">
+                                    <div class="gauge-inner">
+                                        <span class="gauge-number">{{ manual_results.match_score }}%</span>
+                                        <span class="gauge-label">Skill Alignment</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="match-desc">
+                                Based on your profile, your skillset is highly compatible with roles in <strong>{{ manual_results.career }}</strong>. 
+                                Follow the roadmap to acquire the remaining target skills.
+                            </p>
+                        </div>
+
+                        <!-- Skills Analysis Card -->
+                        <div class="glass-card skills-analysis-card">
+                            <h3>Skill Analysis</h3>
+                            <p class="section-desc">Comparison of your extracted skills against standard industry requirements for {{ manual_results.career }}.</p>
+                            
+                            <div class="skills-comparison">
+                                <!-- Extracted skills from input text -->
+                                <div class="skills-block">
+                                    <h4><i class="fa-solid fa-check-double text-green"></i> Extracted Skills</h4>
+                                    {% if manual_results.extracted_skills %}
+                                        <div class="tags-container">
+                                            {% for s in manual_results.extracted_skills %}
+                                                <span class="tag tag-extracted">{{ s }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="no-skills-msg">No structured skills extracted. Input more technical details on the form.</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Target skills to build -->
+                                <div class="skills-block mt-4">
+                                    <h4><i class="fa-solid fa-rocket text-purple"></i> Target Skill Path</h4>
+                                    <p class="tag-sub-desc">These are critical skills matching this career track. Focus on learning items highlighted in gray.</p>
+                                    <div class="tags-container">
+                                        {% set career_skills_map = {
+                                            'AI Engineer': ['Python', 'Machine Learning', 'Deep Learning', 'NLP', 'TensorFlow', 'PyTorch'],
+                                            'Data Scientist': ['Python', 'SQL', 'Statistics', 'Machine Learning', 'NumPy', 'Pandas'],
+                                            'Data Analyst': ['Python', 'SQL', 'Excel', 'Power BI', 'Tableau'],
+                                            'ML Engineer': ['Python', 'Machine Learning', 'TensorFlow', 'PyTorch', 'Docker', 'Kubernetes'],
+                                            'Software Engineer': ['Python', 'Java', 'DSA', 'DBMS', 'OOP', 'Git']
+                                        } %}
+                                        
+                                        {% set target_list = career_skills_map.get(manual_results.career, ['Python', 'DSA', 'SQL', 'Git']) %}
+                                        
+                                        {% for target_skill in target_list %}
+                                            {% set matched = false %}
+                                            {% for es in manual_results.extracted_skills %}
+                                                {% if es.lower() == target_skill.lower() %}
+                                                    {% set matched = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if matched %}
+                                                <span class="tag tag-matched"><i class="fa-solid fa-circle-check"></i> {{ target_skill }}</span>
+                                            {% else %}
+                                                <span class="tag tag-missing"><i class="fa-solid fa-circle-plus"></i> {{ target_skill }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT SECTION: Learning Roadmap Timeline -->
+                    <div class="column-right animate-slide-up-delay-1">
+                        <div class="glass-card roadmap-card">
+                            <div class="card-title-bar">
+                                <h3>Educational Roadmap</h3>
+                                <span class="badge-source" title="Roadmap Source"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ manual_results.roadmap_source }}</span>
+                            </div>
+                            <p class="section-desc">A structured, step-by-step pathway tailored to transition you into a {{ manual_results.career }} role.</p>
+
+                            <!-- Timeline UI -->
+                            <div class="timeline">
+                                <div class="timeline-line"></div>
+                                
+                                {% for step in manual_results.roadmap_steps %}
+                                <div class="timeline-item">
+                                    <div class="timeline-number-node">
+                                        <span>{{ step.step_number }}</span>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-step-header">
+                                            <h4>{{ step.title }}</h4>
+                                            <span class="timeline-duration"><i class="fa-regular fa-clock"></i> {{ step.duration }}</span>
+                                        </div>
+                                        <ul class="timeline-details">
+                                            {% for detail in step.details %}
+                                                <li>{{ detail }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DUAL SECTIONS: PROFILE DETAILS & INPUT TEXT -->
+                <div class="dashboard-grid animate-slide-up-delay-2" style="margin-top: 2rem; margin-bottom: 2rem;">
+                    <!-- Left Card: Profile Details Summary -->
+                    <div class="column-left">
+                        <div class="glass-card profile-details-card" style="padding: 2rem; height: 100%;">
+                            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem;">
+                                <i class="fa-solid fa-address-card" style="color: var(--primary-color);"></i>
+                                Profile Details Summary
+                            </h3>
+                            <div class="profile-details" style="border-top: none; border-bottom: none; gap: 1rem; padding: 0;">
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-regular fa-user" style="margin-right: 0.5rem;"></i> Full Name</span>
+                                    <span class="detail-value" style="font-size: 1.05rem;">{{ manual_results.name }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-regular fa-envelope" style="margin-right: 0.5rem;"></i> Email Address</span>
+                                    <span class="detail-value" style="font-family: var(--font-secondary);">{{ manual_results.email }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-compass-drafting" style="margin-right: 0.5rem;"></i> Target / Aiming Career</span>
+                                    <span class="detail-value text-highlight" style="font-size: 1.05rem;">{{ manual_results.career }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-circle-nodes" style="margin-right: 0.5rem;"></i> Alignment Score</span>
+                                    <span class="detail-value score-badge">{{ manual_results.match_score }}%</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; padding-bottom: 0.5rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-heart" style="margin-right: 0.5rem;"></i> Interests & Goals</span>
+                                    <span class="detail-value" style="color: var(--text-muted); max-width: 250px; text-align: right;">{{ manual_results.interests if manual_results.interests else "None specified" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Card: Manual Inputs Text Viewport -->
+                    <div class="column-right">
+                        <div class="glass-card resume-viewport-card" style="padding: 2rem; height: 100%;">
+                            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem;">
+                                <i class="fa-solid fa-file-invoice" style="color: var(--secondary-color);"></i>
+                                Form Skills description text
+                            </h3>
+                            <div class="resume-text-viewport" style="max-height: 250px; overflow-y: auto; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">{{ manual_results.input_skills }}</div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.5rem; font-style: italic;">
+                                <i class="fa-solid fa-circle-info"></i> This is the raw description text submitted through the Manual Profile form.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM SECTION: Educational Resources Grid -->
+                <section class="resources-section animate-slide-up-delay-3">
+                    <div class="section-header">
+                        <h2>Semantic Course & Certification Recommendations</h2>
+                        <p>Retrieved from the Chroma DB vector index, matches items targeting <strong>{{ manual_results.career }}</strong>.</p>
+                    </div>
+
+                    <div class="resources-tabs-container">
+                        <!-- Courses Grid -->
+                        <div class="resource-block">
+                            <h3 class="resource-type-heading"><i class="fa-solid fa-graduation-cap"></i> Recommended Courses</h3>
+                            {% if manual_results.courses %}
+                                <div class="resources-grid">
+                                    {% for c in manual_results.courses %}
+                                    <div class="resource-card glass-card">
+                                        <div class="card-top">
+                                            <span class="badge-provider">{{ c.provider }}</span>
+                                            <span class="badge-type course-badge">{{ c.type }}</span>
+                                        </div>
+                                        <h4 class="resource-title">{{ c.title }}</h4>
+                                        <p class="resource-desc">{{ c.description }}</p>
+                                        <div class="resource-footer">
+                                            <span class="resource-skills"><i class="fa-solid fa-tags"></i> {{ c.skills }}</span>
+                                            {% if c.link and c.link != '#' %}
+                                            <a href="{{ c.link }}" target="_blank" class="resource-link-btn">
+                                                Watch Course <i class="fa-solid fa-up-right-from-square"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-resources">
+                                    <p>No courses matched the criteria in the vector database.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Certifications Grid -->
+                        <div class="resource-block mt-8">
+                            <h3 class="resource-type-heading"><i class="fa-solid fa-award"></i> Professional Certifications</h3>
+                            {% if manual_results.certifications %}
+                                <div class="resources-grid">
+                                    {% for cert in manual_results.certifications %}
+                                    <div class="resource-card glass-card">
+                                        <div class="card-top">
+                                            <span class="badge-provider">{{ cert.provider }}</span>
+                                            <span class="badge-type cert-badge">{{ cert.type }}</span>
+                                        </div>
+                                        <h4 class="resource-title">{{ cert.title }}</h4>
+                                        <p class="resource-desc">{{ cert.description }}</p>
+                                        <div class="resource-footer">
+                                            <span class="resource-skills"><i class="fa-solid fa-tags"></i> {{ cert.skills }}</span>
+                                            {% if cert.link and cert.link != '#' %}
+                                            <a href="{{ cert.link }}" target="_blank" class="resource-link-btn">
+                                                Register <i class="fa-solid fa-up-right-from-square"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-resources">
+                                    <p>No professional certifications found targeting these skills.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+            {% else %}
+                <!-- Empty manual results placeholder -->
+                <div class="glass-card text-center" style="padding: 4rem 2rem; max-width: 600px; margin: 4rem auto; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.2); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #7c3aed;">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <h3 style="font-size: 1.5rem;">No Manual Profile Submitted</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6; max-width: 450px;">
+                        You haven't submitted details manually in this session yet. Go back to the homepage to build a profile and compare results!
+                    </p>
+                    <a href="{{ url_for('index') }}" class="submit-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1rem; width: auto; padding: 0.8rem 2.2rem;">
+                        <i class="fa-solid fa-arrow-left"></i> Fill Profile Details
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+
+        <!-- ================= RESUME RESULTS CONTENT ================= -->
+        <div id="resume-result-content" class="tab-pane {% if active_tab == 'resume' %}active{% endif %}">
+            {% if resume_results %}
+                <!-- Dashboard Layout Grid -->
+                <div class="dashboard-grid">
+                    
+                    <!-- LEFT SECTION: Career recommendation & Match Score -->
+                    <div class="column-left">
+                        
+                        <!-- Match Card -->
+                        <div class="glass-card career-match-card">
+                            <span class="card-tag">Core recommendation</span>
+                            <h3 class="career-title">{{ resume_results.career }}</h3>
+                            
+                            <!-- Score Meter -->
+                            <div class="gauge-wrapper">
+                                <div class="circle-gauge" style="--score-pct: {{ resume_results.match_score }}">
+                                    <div class="gauge-inner">
+                                        <span class="gauge-number">{{ resume_results.match_score }}%</span>
+                                        <span class="gauge-label">Skill Alignment</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p class="match-desc">
+                                Based on your uploaded resume, your skillset is highly compatible with roles in <strong>{{ resume_results.career }}</strong>. 
+                                Follow the roadmap to acquire the remaining target skills.
+                            </p>
+                        </div>
+
+                        <!-- Skills Analysis Card -->
+                        <div class="glass-card skills-analysis-card">
+                            <h3>Skill Analysis</h3>
+                            <p class="section-desc">Comparison of your extracted skills against standard industry requirements for {{ resume_results.career }}.</p>
+                            
+                            <div class="skills-comparison">
+                                <!-- Extracted skills from resume -->
+                                <div class="skills-block">
+                                    <h4><i class="fa-solid fa-check-double text-green"></i> Extracted Skills</h4>
+                                    {% if resume_results.extracted_skills %}
+                                        <div class="tags-container">
+                                            {% for s in resume_results.extracted_skills %}
+                                                <span class="tag tag-extracted">{{ s }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="no-skills-msg">No structured skills extracted. Input more technical details on the form.</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Target skills to build -->
+                                <div class="skills-block mt-4">
+                                    <h4><i class="fa-solid fa-rocket text-purple"></i> Target Skill Path</h4>
+                                    <p class="tag-sub-desc">These are critical skills matching this career track. Focus on learning items highlighted in gray.</p>
+                                    <div class="tags-container">
+                                        {% set career_skills_map = {
+                                            'AI Engineer': ['Python', 'Machine Learning', 'Deep Learning', 'NLP', 'TensorFlow', 'PyTorch'],
+                                            'Data Scientist': ['Python', 'SQL', 'Statistics', 'Machine Learning', 'NumPy', 'Pandas'],
+                                            'Data Analyst': ['Python', 'SQL', 'Excel', 'Power BI', 'Tableau'],
+                                            'ML Engineer': ['Python', 'Machine Learning', 'TensorFlow', 'PyTorch', 'Docker', 'Kubernetes'],
+                                            'Software Engineer': ['Python', 'Java', 'DSA', 'DBMS', 'OOP', 'Git']
+                                        } %}
+                                        
+                                        {% set target_list = career_skills_map.get(resume_results.career, ['Python', 'DSA', 'SQL', 'Git']) %}
+                                        
+                                        {% for target_skill in target_list %}
+                                            {% set matched = false %}
+                                            {% for es in resume_results.extracted_skills %}
+                                                {% if es.lower() == target_skill.lower() %}
+                                                    {% set matched = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            
+                                            {% if matched %}
+                                                <span class="tag tag-matched"><i class="fa-solid fa-circle-check"></i> {{ target_skill }}</span>
+                                            {% else %}
+                                                <span class="tag tag-missing"><i class="fa-solid fa-circle-plus"></i> {{ target_skill }}</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT SECTION: Learning Roadmap Timeline -->
+                    <div class="column-right">
+                        <div class="glass-card roadmap-card">
+                            <div class="card-title-bar">
+                                <h3>Educational Roadmap</h3>
+                                <span class="badge-source" title="Roadmap Source"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ resume_results.roadmap_source }}</span>
+                            </div>
+                            <p class="section-desc">A structured, step-by-step pathway tailored to transition you into a {{ resume_results.career }} role.</p>
+
+                            <!-- Timeline UI -->
+                            <div class="timeline">
+                                <div class="timeline-line"></div>
+                                
+                                {% for step in resume_results.roadmap_steps %}
+                                <div class="timeline-item">
+                                    <div class="timeline-number-node">
+                                        <span>{{ step.step_number }}</span>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <div class="timeline-step-header">
+                                            <h4>{{ step.title }}</h4>
+                                            <span class="timeline-duration"><i class="fa-regular fa-clock"></i> {{ step.duration }}</span>
+                                        </div>
+                                        <ul class="timeline-details">
+                                            {% for detail in step.details %}
+                                                <li>{{ detail }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DUAL SECTIONS: PROFILE DETAILS & EXTRACTED RESUME TEXT -->
+                <div class="dashboard-grid" style="margin-top: 2rem; margin-bottom: 2rem;">
+                    <!-- Left Card: Profile Details Summary -->
+                    <div class="column-left">
+                        <div class="glass-card profile-details-card" style="padding: 2rem; height: 100%;">
+                            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem;">
+                                <i class="fa-solid fa-address-card" style="color: var(--primary-color);"></i>
+                                Profile Details Summary
+                            </h3>
+                            <div class="profile-details" style="border-top: none; border-bottom: none; gap: 1rem; padding: 0;">
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-regular fa-user" style="margin-right: 0.5rem;"></i> Full Name</span>
+                                    <span class="detail-value" style="font-size: 1.05rem;">{{ resume_results.name }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-regular fa-envelope" style="margin-right: 0.5rem;"></i> Email Address</span>
+                                    <span class="detail-value" style="font-family: var(--font-secondary);">{{ resume_results.email }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-compass-drafting" style="margin-right: 0.5rem;"></i> Target / Aiming Career</span>
+                                    <span class="detail-value text-highlight" style="font-size: 1.05rem;">{{ resume_results.career }}</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-circle-nodes" style="margin-right: 0.5rem;"></i> Alignment Score</span>
+                                    <span class="detail-value score-badge">{{ resume_results.match_score }}%</span>
+                                </div>
+                                <div class="detail-row" style="font-size: 0.95rem; padding-bottom: 0.5rem;">
+                                    <span class="detail-label"><i class="fa-solid fa-heart" style="margin-right: 0.5rem;"></i> Interests & Goals</span>
+                                    <span class="detail-value" style="color: var(--text-muted); max-width: 250px; text-align: right;">{{ resume_results.interests if resume_results.interests else "None specified" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Card: Extracted Resume Content Viewport -->
+                    <div class="column-right">
+                        <div class="glass-card resume-viewport-card" style="padding: 2rem; height: 100%;">
+                            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.3rem;">
+                                <i class="fa-solid fa-file-invoice" style="color: var(--secondary-color);"></i>
+                                Parsed Document Raw Text
+                            </h3>
+                            <div class="resume-text-viewport" style="max-height: 250px; overflow-y: auto; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">{{ resume_results.input_skills }}</div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 0.5rem; font-style: italic;">
+                                <i class="fa-solid fa-circle-info"></i> This shows the exact textual content processed by the parsing and analysis engine.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM SECTION: Educational Resources Grid -->
+                <section class="resources-section animate-slide-up-delay-3">
+                    <div class="section-header">
+                        <h2>Semantic Course & Certification Recommendations</h2>
+                        <p>Retrieved from the Chroma DB vector index, matches items targeting <strong>{{ resume_results.career }}</strong>.</p>
+                    </div>
+
+                    <div class="resources-tabs-container">
+                        <!-- Courses Grid -->
+                        <div class="resource-block">
+                            <h3 class="resource-type-heading"><i class="fa-solid fa-graduation-cap"></i> Recommended Courses</h3>
+                            {% if resume_results.courses %}
+                                <div class="resources-grid">
+                                    {% for c in resume_results.courses %}
+                                    <div class="resource-card glass-card">
+                                        <div class="card-top">
+                                            <span class="badge-provider">{{ c.provider }}</span>
+                                            <span class="badge-type course-badge">{{ c.type }}</span>
+                                        </div>
+                                        <h4 class="resource-title">{{ c.title }}</h4>
+                                        <p class="resource-desc">{{ c.description }}</p>
+                                        <div class="resource-footer">
+                                            <span class="resource-skills"><i class="fa-solid fa-tags"></i> {{ c.skills }}</span>
+                                            {% if c.link and c.link != '#' %}
+                                            <a href="{{ c.link }}" target="_blank" class="resource-link-btn">
+                                                Watch Course <i class="fa-solid fa-up-right-from-square"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-resources">
+                                    <p>No courses matched the criteria in the vector database.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Certifications Grid -->
+                        <div class="resource-block mt-8">
+                            <h3 class="resource-type-heading"><i class="fa-solid fa-award"></i> Professional Certifications</h3>
+                            {% if resume_results.certifications %}
+                                <div class="resources-grid">
+                                    {% for cert in resume_results.certifications %}
+                                    <div class="resource-card glass-card">
+                                        <div class="card-top">
+                                            <span class="badge-provider">{{ cert.provider }}</span>
+                                            <span class="badge-type cert-badge">{{ cert.type }}</span>
+                                        </div>
+                                        <h4 class="resource-title">{{ cert.title }}</h4>
+                                        <p class="resource-desc">{{ cert.description }}</p>
+                                        <div class="resource-footer">
+                                            <span class="resource-skills"><i class="fa-solid fa-tags"></i> {{ cert.skills }}</span>
+                                            {% if cert.link and cert.link != '#' %}
+                                            <a href="{{ cert.link }}" target="_blank" class="resource-link-btn">
+                                                Register <i class="fa-solid fa-up-right-from-square"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-resources">
+                                    <p>No professional certifications found targeting these skills.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+            {% else %}
+                <!-- Empty resume results placeholder -->
+                <div class="glass-card text-center" style="padding: 4rem 2rem; max-width: 600px; margin: 4rem auto; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #3b82f6;">
+                        <i class="fa-solid fa-file-invoice"></i>
+                    </div>
+                    <h3 style="font-size: 1.5rem;">No Resume Uploaded</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6; max-width: 450px;">
+                        You haven't uploaded a resume file in this session yet. Go back to the homepage to upload your resume and compare results!
+                    </p>
+                    <a href="{{ url_for('index') }}" class="submit-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1rem; width: auto; padding: 0.8rem 2.2rem;">
+                        <i class="fa-solid fa-arrow-left"></i> Go Upload Resume
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>&copy; 2026 PathFinder System. Powered by Flask, ChromaDB, and Groq LLMs.</p>
+        </footer>
+    </div>
+
+    <!-- Switch Tab Javascript -->
+    <script>
+        function switchResultTab(tabName) {
+            // Remove active class from tab buttons
+            document.querySelectorAll('.result-tabs .tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Remove active class from tab panes
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+            
+            if (tabName === 'manual') {
+                document.getElementById('manual-tab-btn').classList.add('active');
+                document.getElementById('manual-result-content').classList.add('active');
+                
+                // Update active user details badge dynamically if manual results exist
+                {% if manual_results %}
+                document.getElementById('active-user-name').textContent = "{{ manual_results.name }}";
+                document.getElementById('active-user-email').textContent = "{{ manual_results.email }}";
+                {% endif %}
+            } else {
+                document.getElementById('resume-tab-btn').classList.add('active');
+                document.getElementById('resume-result-content').classList.add('active');
+                
+                // Update active user details badge dynamically if resume results exist
+                {% if resume_results %}
+                document.getElementById('active-user-name').textContent = "{{ resume_results.name }}";
+                document.getElementById('active-user-email').textContent = "{{ resume_results.email }}";
+                {% endif %}
+            }
+        }
+    </script>
+</body>
+</html>
