@@ -11,7 +11,8 @@ DEFAULT_CAREERS = [
     {"Career": "Data Scientist", "Skills": "Python SQL Statistics Machine Learning"},
     {"Career": "Data Analyst", "Skills": "Python SQL Excel Power BI"},
     {"Career": "ML Engineer", "Skills": "Python Machine Learning TensorFlow"},
-    {"Career": "Software Engineer", "Skills": "Python Java DSA DBMS OOP"}
+    {"Career": "Software Engineer", "Skills": "Python Java DSA DBMS OOP"},
+    {"Career": "Civil Engineer", "Skills": "AutoCAD CAD Structural Engineering Concrete Construction Management Soil Mechanics Surveying Estimation Project Management"}
 ]
 
 

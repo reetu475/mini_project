@@ -83,6 +83,12 @@ LOCAL_ROADMAPS = {
         {"step_number": 2, "title": "Data Analysis & Financial Modeling", "duration": "4 Weeks", "details": ["Use Excel for data modeling, cost-benefit analysis, and business valuation.", "Gather corporate data and identify operational inefficiencies."]},
         {"step_number": 3, "title": "Problem Solving & Hypothesis Testing", "duration": "4 Weeks", "details": ["Develop issue trees and structure complex business problems.", "Formulate and test hypotheses using quantitative and qualitative data."]},
         {"step_number": 4, "title": "Client Management & Storytelling", "duration": "4 Weeks", "details": ["Master executive communication, presentation design (slide decks), and client management.", "Present final recommendation reports and implementation plans to corporate executives."]}
+    ],
+    "Civil Engineer": [
+        {"step_number": 1, "title": "AutoCAD & Structural Analysis Foundations", "duration": "4 Weeks", "details": ["Master AutoCAD 2D drafting and coordinate systems.", "Study structural mechanics, statics, dynamics, and basic material mechanics."]},
+        {"step_number": 2, "title": "Concrete & Soil Mechanics", "duration": "5 Weeks", "details": ["Learn concrete structures design, reinforced concrete, and steel design.", "Understand soil mechanics, foundation engineering, and geology."]},
+        {"step_number": 3, "title": "Construction & Site Management", "duration": "5 Weeks", "details": ["Learn project scheduling, cost estimation, quantity surveying, and budgeting.", "Understand site safety regulations, building codes, and contracting."]},
+        {"step_number": 4, "title": "Transportation & Water Resource Systems", "duration": "4 Weeks", "details": ["Study hydraulics, hydrology, environmental engineering, and water networks.", "Learn highway engineering, transport planning, and design software (Civil 3D)."]}
     ]
 }
 
