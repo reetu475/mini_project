@@ -360,10 +360,6 @@ if st.session_state["active_profile_id"] is None:
                 m_skills = st.text_area("Skills & Experience", value=pre_skills, placeholder="Describe your programming languages, frameworks, or past projects.")
                 m_interests = st.text_input("Interests & Educational Goals", value=pre_interests, placeholder="e.g. Data visualization, backend web services, Cloud Computing")
                 
-                # Hidden carryover inputs
-                h_resume_id = st.text_input("Associated Resume ID (Auto)", value=str(pre_resume_id), disabled=True, label_visibility="collapsed")
-                h_target_career = st.text_input("Target Career (Auto)", value=str(pre_target_career), disabled=True, label_visibility="collapsed")
-                
                 m_submit = st.form_submit_button("Generate Advisor Map", use_container_width=True)
                 
                 if m_submit:
@@ -383,7 +379,7 @@ if st.session_state["active_profile_id"] is None:
                                 user_skills = extract_skills(m_skills)
                                 
                             # Calculate scoring and recommend career
-                            target_c = h_target_career.strip()
+                            target_c = str(pre_target_career).strip()
                             if target_c:
                                 rec_career = target_c
                                 if active_api_key:
@@ -397,7 +393,7 @@ if st.session_state["active_profile_id"] is None:
                                     rec_career, m_score = recommend_career(user_skills)
                                     
                             # Parse associated resume ID
-                            assoc_id = int(h_resume_id) if h_resume_id.strip() else None
+                            assoc_id = int(pre_resume_id) if str(pre_resume_id).strip() else None
                             
                             # Save to SQLite
                             conn = get_db_connection()
