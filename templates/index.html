@@ -55,8 +55,7 @@
                 {% endwith %}
                 
                 <form id="advisor-form" action="{{ url_for('recommend') }}" method="POST" class="profile-form">
-                    <input type="hidden" id="associated_resume_id" name="associated_resume_id" value="">
-                    <input type="hidden" id="manual_target_career" name="target_career" value="">
+                    <input type="hidden" id="associated_resume_id" name="associated_resume_id" value="{{ autofill_data.resume_profile_id if autofill_data else '' }}">
                     <!-- Row 1: Name and Email -->
                     <div class="form-row">
                         <div class="form-group">
@@ -64,7 +63,7 @@
                                 <i class="fa-regular fa-user"></i> Full Name
                             </label>
                             <div class="input-wrapper">
-                                <input type="text" id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name">
+                                <input type="text" id="name" name="name" required placeholder="e.g. Alex Morgan" autocomplete="name" value="{{ autofill_data.name if autofill_data else '' }}">
                                 <span class="validity-indicator"><i class="fa-solid fa-circle-notch spinner"></i></span>
                             </div>
                             <span class="field-error" id="name-error"></span>
@@ -75,7 +74,7 @@
                                 <i class="fa-regular fa-envelope"></i> Email Address
                             </label>
                             <div class="input-wrapper">
-                                <input type="email" id="email" name="email" required placeholder="alex@example.com" autocomplete="email">
+                                <input type="email" id="email" name="email" required placeholder="alex@example.com" autocomplete="email" value="{{ autofill_data.email if autofill_data else '' }}">
                                 <span class="validity-indicator"><i class="fa-solid fa-circle-notch spinner"></i></span>
                             </div>
                             <span class="field-error" id="email-error"></span>
@@ -89,7 +88,7 @@
                         </label>
                         <div class="input-wrapper">
                             <textarea id="skills_text" name="skills_text" required rows="4" 
-                                placeholder="Describe your current skills, programming languages, tools, or past projects."></textarea>
+                                placeholder="Describe your current skills, programming languages, tools, or past projects.">{{ autofill_data.skills_text if autofill_data else '' }}</textarea>
                         </div>
                         <span class="input-hint">Our regex extractor will parse this text for industry-standard skills (e.g. Python, SQL, Java, ML, React).</span>
                     </div>
@@ -100,12 +99,21 @@
                             <i class="fa-solid fa-graduation-cap"></i> Interests & Educational Goals
                         </label>
                         <div class="input-wrapper">
-                            <input type="text" id="interests" name="interests" placeholder="e.g. Artificial Intelligence, Data visualization, backend web services">
+                            <input type="text" id="interests" name="interests" placeholder="e.g. Artificial Intelligence, Data visualization, backend web services" value="{{ autofill_data.interests if autofill_data else '' }}">
                         </div>
                         <span class="input-hint">Helps refine ChromaDB course recommendations.</span>
                     </div>
 
-
+                    <!-- Row 4: Target / Aiming Career (Optional) -->
+                    <div class="form-group">
+                        <label for="manual_target_career">
+                            <i class="fa-solid fa-crosshairs"></i> Target / Aiming Career <span class="optional-tag">(Optional)</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="text" id="manual_target_career" name="target_career" placeholder="e.g. Data Scientist, Full Stack Developer, DevOps Engineer" value="{{ autofill_data.target_career if autofill_data else '' }}">
+                        </div>
+                        <span class="input-hint">Aligns compatibility score and roadmap against this role. If empty, automatically predicts a role.</span>
+                    </div>
 
                     <!-- Submit Button -->
                     <button type="submit" class="submit-btn" id="submit-btn">

@@ -359,6 +359,7 @@ if st.session_state["active_profile_id"] is None:
                 m_email = st.text_input("Email Address", value=pre_email, placeholder="alex@example.com")
                 m_skills = st.text_area("Skills & Experience", value=pre_skills, placeholder="Describe your programming languages, frameworks, or past projects.")
                 m_interests = st.text_input("Interests & Educational Goals", value=pre_interests, placeholder="e.g. Data visualization, backend web services, Cloud Computing")
+                m_target_career = st.text_input("Target / Aiming Career (Optional)", value=pre_target_career, placeholder="e.g. Data Scientist, DevOps Engineer")
                 
                 m_submit = st.form_submit_button("Generate Advisor Map", use_container_width=True)
                 
@@ -379,7 +380,7 @@ if st.session_state["active_profile_id"] is None:
                                 user_skills = extract_skills(m_skills)
                                 
                             # Calculate scoring and recommend career
-                            target_c = str(pre_target_career).strip()
+                            target_c = str(m_target_career).strip()
                             if target_c:
                                 rec_career = target_c
                                 if active_api_key:

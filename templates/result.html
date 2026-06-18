@@ -89,7 +89,7 @@
 
         <!-- Back Button & DB Status -->
         <div class="nav-actions animate-fade-in">
-            <a href="{{ url_for('index') }}" class="back-link">
+            <a href="{{ url_for('index', modify=manual_results.id if manual_results else resume_results.id) }}" class="back-link">
                 <i class="fa-solid fa-arrow-left"></i> Modify Profile
             </a>
             

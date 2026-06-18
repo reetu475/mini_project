@@ -166,6 +166,29 @@ def index():
         session['session_id'] = str(uuid.uuid4())
         session.permanent = True
         
+    modify_id = request.args.get('modify')
+    autofill_data = None
+    if modify_id:
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM user_profiles WHERE id = ? AND session_id = ?', (int(modify_id), session['session_id']))
+            row = cursor.fetchone()
+            if row:
+                autofill_data = {
+                    "name": row["name"],
+                    "email": row["email"],
+                    "skills_text": row["skills_text"],
+                    "interests": row["interests"] if row["interests"] else "",
+                    "resume_profile_id": row["associated_resume_id"] if 'associated_resume_id' in row.keys() and row["associated_resume_id"] else "",
+                    "target_career": row["recommended_career"]
+                }
+                if row["submission_type"] == 'resume':
+                    autofill_data["resume_profile_id"] = row["id"]
+            conn.close()
+        except Exception as e:
+            print(f"Error loading modify profile: {e}")
+        
     profiles = []
     try:
         conn = get_db_connection()
@@ -211,7 +234,8 @@ def index():
     return render_template(
         'index.html',
         has_env_key=has_env_key,
-        profiles=profiles
+        profiles=profiles,
+        autofill_data=autofill_data
     )
 
 
