@@ -89,7 +89,7 @@ st.markdown("""
         font-weight: bold;
     }
 </style>
-""", unsafe_allow_index=True)
+""", unsafe_allow_html=True)
 
 # Helper to fetch configuration (Env var first, fallback to Streamlit Secrets)
 def get_config(key, default=None):
@@ -229,8 +229,8 @@ def get_profile_results_context(row):
 
 # ----------------- SIDEBAR: SAVED HISTORY -----------------
 with st.sidebar:
-    st.markdown('<div class="logo-text">🧭 PathFinder</div>', unsafe_allow_index=True)
-    st.markdown('<div class="logo-sub">Career Discovery Engine</div>', unsafe_allow_index=True)
+    st.markdown('<div class="logo-text">🧭 PathFinder</div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo-sub">Career Discovery Engine</div>', unsafe_allow_html=True)
     st.markdown("---")
     
     st.subheader("Saved Profiles")
@@ -606,7 +606,7 @@ else:
                                 {"".join(f"<li>{d}</li>" for d in step['details'])}
                             </ul>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
             
             st.markdown("---")
             st.subheader("📚 Recommended Learning Resources")
@@ -626,7 +626,7 @@ else:
                             <p>🔑 Skills: {c['skills']}</p>
                             <a href="{c['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Start Learning</button></a>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
                         
             with col_certs:
                 st.markdown("### Professional Certifications")
@@ -642,7 +642,7 @@ else:
                             <p>🔑 Skills: {cert['skills']}</p>
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
 
     # ----------------- TAB 2: RESUME RESULTS -----------------
     with tab_resume:
@@ -680,7 +680,7 @@ else:
                                 {"".join(f"<li>{d}</li>" for d in step['details'])}
                             </ul>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
             
             st.markdown("---")
             st.subheader("📚 Recommended Learning Resources")
@@ -700,7 +700,7 @@ else:
                             <p>🔑 Skills: {c['skills']}</p>
                             <a href="{c['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#3b82f6;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Start Learning</button></a>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
                         
             with col_r_certs:
                 st.markdown("### Professional Certifications")
@@ -716,4 +716,4 @@ else:
                             <p>🔑 Skills: {cert['skills']}</p>
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
                         </div>
-                        """, unsafe_allow_index=True)
+                        """, unsafe_allow_html=True)
