@@ -95,9 +95,14 @@ st.markdown("""
 def get_config(key, default=None):
     if key in os.environ:
         return os.environ[key]
-    if key in st.secrets:
-        return st.secrets[key]
+    try:
+        # Check in streamlit secrets if initialized
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
     return default
+
 
 # Import custom core modules
 from skill_extractor import extract_skills, extract_skills_with_groq, SPACY_AVAILABLE
@@ -175,7 +180,11 @@ NAME_REGEX = re.compile(r'^[a-zA-Z\s]{2,50}$')
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
 
 # Get Active API Key
-active_api_key = get_config("GROQ_API_KEY")
+if "custom_groq_key" not in st.session_state:
+    st.session_state["custom_groq_key"] = ""
+
+active_api_key = get_config("GROQ_API_KEY") or st.session_state["custom_groq_key"]
+
 
 # Profile rendering results loader
 def get_profile_results_context(row):
@@ -232,6 +241,20 @@ with st.sidebar:
     st.markdown('<div class="logo-text">🧭 PathFinder</div>', unsafe_allow_html=True)
     st.markdown('<div class="logo-sub">Career Discovery Engine</div>', unsafe_allow_html=True)
     st.markdown("---")
+    
+    # API Key Input if not configured globally
+    if not get_config("GROQ_API_KEY"):
+        api_key_input = st.text_input(
+            "Groq API Key",
+            value=st.session_state["custom_groq_key"],
+            type="password",
+            help="Enter your Groq API key from console.groq.com to enable dynamic recommendations."
+        )
+        if api_key_input != st.session_state["custom_groq_key"]:
+            st.session_state["custom_groq_key"] = api_key_input
+            st.rerun()
+        st.markdown("---")
+
     
     st.subheader("Saved Profiles")
     
