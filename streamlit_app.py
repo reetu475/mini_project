@@ -584,8 +584,21 @@ else:
     
     # Back button
     if st.button("⬅️ Modify Profile Settings"):
+        row_to_load = manual_row if manual_row else resume_row
+        if row_to_load:
+            st.session_state["autofill_data"] = {
+                "name": row_to_load["name"],
+                "email": row_to_load["email"],
+                "skills_text": row_to_load["skills_text"],
+                "interests": row_to_load["interests"] if row_to_load["interests"] else "",
+                "resume_profile_id": row_to_load["associated_resume_id"] if 'associated_resume_id' in row_to_load.keys() and row_to_load["associated_resume_id"] else "",
+                "target_career": row_to_load["recommended_career"]
+            }
+            if row_to_load["submission_type"] == 'resume':
+                st.session_state["autofill_data"]["resume_profile_id"] = row_to_load["id"]
         st.session_state["active_profile_id"] = None
         st.rerun()
+
         
     tab_manual, tab_resume = st.tabs(["📝 Manual Form Results", "📄 Resume Upload Results"])
     
