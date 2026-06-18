@@ -305,6 +305,9 @@ def recommend():
         conn.commit()
         profile_id = cursor.lastrowid
         
+        # Save to ChromaDB
+        advisor.save_user_profile(profile_id, name, email, skills_text, interests, recommended_career, match_score, 'manual')
+        
         # Fetch exact rows for rendering
         cursor.execute('SELECT * FROM user_profiles WHERE id = ?', (profile_id,))
         manual_row = cursor.fetchone()
@@ -425,6 +428,10 @@ def api_parse_resume():
         ))
         conn.commit()
         resume_profile_id = cursor.lastrowid
+        
+        # Save to ChromaDB
+        advisor.save_user_profile(resume_profile_id, name, email, text.strip(), interests, recommended_career, match_score, 'resume')
+        
         conn.close()
             
         return jsonify({
@@ -546,6 +553,10 @@ def upload_resume():
         ))
         conn.commit()
         profile_id = cursor.lastrowid
+        
+        # Save to ChromaDB
+        advisor.save_user_profile(profile_id, name, email, skills_text, interests, recommended_career, match_score, 'resume')
+        
         # Fetch exact resume row for rendering
         cursor.execute('SELECT * FROM user_profiles WHERE id = ?', (profile_id,))
         resume_row = cursor.fetchone()
@@ -661,13 +672,19 @@ def delete_profile(profile_id):
             
             # Delete selected row
             conn.execute('DELETE FROM user_profiles WHERE id = ? AND session_id = ?', (profile_id, session_id))
+            advisor.delete_user_profile_from_chroma(profile_id)
             
             # Delete associated resume if this is a manual profile
             if associated_resume_id:
                 conn.execute('DELETE FROM user_profiles WHERE id = ? AND session_id = ?', (associated_resume_id, session_id))
+                advisor.delete_user_profile_from_chroma(associated_resume_id)
                 
             # Delete associated manual profile if this is a resume profile
             if row['submission_type'] == 'resume':
+                cursor.execute('SELECT id FROM user_profiles WHERE associated_resume_id = ? AND session_id = ?', (profile_id, session_id))
+                assoc_manual = cursor.fetchone()
+                if assoc_manual:
+                    advisor.delete_user_profile_from_chroma(assoc_manual['id'])
                 conn.execute('DELETE FROM user_profiles WHERE associated_resume_id = ? AND session_id = ?', (profile_id, session_id))
                 
         conn.commit()

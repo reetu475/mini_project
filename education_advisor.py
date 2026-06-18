@@ -257,6 +257,51 @@ Return ONLY a JSON list of objects, each with keys "title", "provider", "type", 
             print(f"Error in Groq educational recommendation: {e}. Falling back to ChromaDB.")
             
         return self.get_recommendations(career, limit)
+    def save_user_profile(self, profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type):
+        """Save user profile to a collection in ChromaDB under user_profiles_v1."""
+        if not self.use_chroma:
+            return False
+        try:
+            user_collection = self.client.get_or_create_collection("user_profiles_v1")
+            
+            # Format text representation for semantic embeddings
+            doc_text = f"Name: {name}\nEmail: {email}\nSkills text: {skills_text}\nInterests: {interests}\nRecommended Career: {recommended_career}\nMatch Score: {match_score}%\nSubmission Type: {submission_type}"
+            
+            # Build metadata dict
+            metadata = {
+                "profile_id": int(profile_id),
+                "name": str(name),
+                "email": str(email),
+                "interests": str(interests if interests else ""),
+                "recommended_career": str(recommended_career),
+                "match_score": float(match_score),
+                "submission_type": str(submission_type)
+            }
+            
+            user_collection.add(
+                documents=[doc_text],
+                metadatas=[metadata],
+                ids=[f"user_profile_{profile_id}"]
+            )
+            print(f"ChromaDB: Successfully saved profile ID {profile_id}")
+            return True
+        except Exception as e:
+            print(f"Warning: Failed to save profile to ChromaDB: {e}")
+            return False
+
+    def delete_user_profile_from_chroma(self, profile_id):
+        """Delete user profile from ChromaDB collection."""
+        if not self.use_chroma:
+            return False
+        try:
+            user_collection = self.client.get_or_create_collection("user_profiles_v1")
+            user_collection.delete(ids=[f"user_profile_{profile_id}"])
+            print(f"ChromaDB: Successfully deleted profile ID {profile_id}")
+            return True
+        except Exception as e:
+            print(f"Warning: Failed to delete profile from ChromaDB: {e}")
+            return False
+
 
 
 if __name__ == "__main__":

@@ -1,0 +1,10 @@
+flask
+pandas
+scikit-learn
+numpy
+chromadb
+python-dotenv
+spacy
+groq
+pypdf
+streamlit
