@@ -24,7 +24,10 @@ DEFAULT_SKILLS = [
     "Cloud", "Cyber", "AI", "Artificial Intelligence", "Cybersecurity",
     "Finance", "Accounting", "Financial Modeling", "Valuation", "Figma",
     "UI/UX", "Design", "Wireframing", "Prototyping", "Recruitment", "HR",
-    "CAD", "SolidWorks", "AutoCAD", "Thermodynamics", "Writing", "Blogging"
+    "CAD", "SolidWorks", "AutoCAD", "Thermodynamics", "Writing", "Blogging",
+    "Civil Engineering", "Civil Engineer", "Structural Engineering", "Concrete Design",
+    "Construction Management", "Surveying", "Soil Mechanics", "Quantity Surveying",
+    "Estimation", "Geotechnical Engineering"
 ]
 
 try:

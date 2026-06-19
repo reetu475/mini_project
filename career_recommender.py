@@ -12,7 +12,7 @@ DEFAULT_CAREERS = [
     {"Career": "Data Analyst", "Skills": "Python SQL Excel Power BI"},
     {"Career": "ML Engineer", "Skills": "Python Machine Learning TensorFlow"},
     {"Career": "Software Engineer", "Skills": "Python Java DSA DBMS OOP"},
-    {"Career": "Civil Engineer", "Skills": "AutoCAD CAD Structural Engineering Concrete Construction Management Soil Mechanics Surveying Estimation Project Management"}
+    {"Career": "Civil Engineer", "Skills": "Civil Engineer Civil Engineering AutoCAD CAD Structural Engineering Concrete Construction Management Soil Mechanics Surveying Estimation Project Management"}
 ]
 
 
@@ -76,7 +76,7 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
                 "role": "system",
                 "content": (
                     "You are an expert career recommender. You MUST analyze the candidate's skills and interests, "
-                    "recommend the single best career path (e.g. 'Data Scientist', 'DevOps Engineer', 'Embedded Systems Engineer'), "
+                    "recommend the single best career path (e.g. 'Data Scientist', 'Civil Engineer', 'Financial Analyst', 'Embedded Systems Engineer'), "
                     "and calculate a compatibility score between 0 and 100 representing how well their skills match the career. "
                     "You MUST return ONLY a valid JSON object matching this schema:\n"
                     "{\n"

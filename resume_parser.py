@@ -266,6 +266,8 @@ def parse_resume_text(text, api_key=None):
         interests = "Cloud Computing & DevOps"
     elif any(s in skills_lower for s in ["cybersecurity", "cyber", "networking", "security"]):
         interests = "Cybersecurity & Networking"
+    elif any(s in skills_lower for s in ["civil engineering", "civil engineer", "structural engineering", "concrete design", "construction management", "surveying", "soil mechanics", "quantity surveying", "estimation", "geotechnical engineering"]):
+        interests = "Civil Engineering & Construction"
     elif any(s in skills_lower for s in ["cad", "solidworks", "autocad", "thermodynamics"]):
         interests = "Mechanical Design & Engineering"
     elif any(s in skills_lower for s in ["finance", "accounting", "financial modeling", "valuation"]):
