@@ -771,19 +771,17 @@ else:
                     with cols[idx % 3]:
                         matched_badges = "".join(f'<span class="badge-matched">✓ {s}</span>' for s in job['matched_skills'])
                         missing_badges = "".join(f'<span class="badge-missing">? {s}</span>' for s in job['missing_skills'])
-                        st.markdown(f"""
-                        <div class="job-card">
-                            <strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
-                            <div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
-                            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
-                            <div style="margin-bottom:0.8rem;">
-                                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
-                                {matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
-                                {missing_badges}
-                            </div>
-                            <a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"""<div class="job-card">
+<strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
+<div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
+<div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
+<div style="margin-bottom:0.8rem;">
+<div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
+{matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
+{missing_badges}
+</div>
+<a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
+</div>""", unsafe_allow_html=True)
 
     # ----------------- TAB 2: RESUME RESULTS -----------------
     with tab_resume:
@@ -915,16 +913,14 @@ else:
                     with cols[idx % 3]:
                         matched_badges = "".join(f'<span class="badge-matched">✓ {s}</span>' for s in job['matched_skills'])
                         missing_badges = "".join(f'<span class="badge-missing">? {s}</span>' for s in job['missing_skills'])
-                        st.markdown(f"""
-                        <div class="job-card">
-                            <strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
-                            <div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
-                            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
-                            <div style="margin-bottom:0.8rem;">
-                                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
-                                {matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
-                                {missing_badges}
-                            </div>
-                            <a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f"""<div class="job-card">
+<strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
+<div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
+<div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
+<div style="margin-bottom:0.8rem;">
+<div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
+{matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
+{missing_badges}
+</div>
+<a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
+</div>""", unsafe_allow_html=True)
