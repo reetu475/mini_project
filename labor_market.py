@@ -117,7 +117,7 @@ def get_market_analysis(career):
 def get_missing_skills(career, user_skills):
     """
     Identifies what required skills for a target career the user is missing.
-    Matches against careers.csv data.
+    Matches against careers.csv data by extracting complete skill entities.
     """
     try:
         df = pd.read_csv("datasets/careers.csv")
@@ -133,21 +133,35 @@ def get_missing_skills(career, user_skills):
     if match.empty:
         return []
 
-    career_skills_str = match.iloc[0]["Skills"]
-    # Split skills by space/commas
-    career_skills = [s.strip() for s in re.split(r'[, ]+', career_skills_str) if s.strip()]
+    career_skills_str = match.iloc[0]["Skills"].lower()
     
-    # Identify which skills the user is missing
+    # Load global skills list to find complete skill phrases
+    try:
+        from skill_extractor import SKILLS
+    except ImportError:
+        from skill_extractor import DEFAULT_SKILLS as SKILLS
+        
+    # Find which global skills exist in this career's skills string
+    career_skills = []
+    for skill in SKILLS:
+        skill_lower = skill.lower().strip()
+        # Use word boundaries to avoid partial matches
+        pattern = r'\b' + re.escape(skill_lower) + r'\b'
+        if re.search(pattern, career_skills_str):
+            career_skills.append(skill)
+            
+    # Find which of these career skills the user is missing
     user_skills_lower = [s.lower().strip() for s in user_skills]
     missing_skills = []
     
     for cs in career_skills:
-        has_skill = False
+        cs_lower = cs.lower().strip()
+        is_missing = True
         for us in user_skills_lower:
-            if us in cs.lower() or cs.lower() in us:
-                has_skill = True
+            if us == cs_lower or us in cs_lower or cs_lower in us:
+                is_missing = False
                 break
-        if not has_skill and cs not in missing_skills:
+        if is_missing and cs not in missing_skills:
             missing_skills.append(cs)
             
     return missing_skills
