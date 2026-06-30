@@ -121,6 +121,47 @@ st.markdown("""
         display: inline-block;
         margin-bottom: 0.3rem;
     }
+    /* Future Proofing Styles */
+    .badge-risk-low {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-block;
+        margin-right: 0.3rem;
+        margin-bottom: 0.3rem;
+    }
+    .badge-risk-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-block;
+        margin-right: 0.3rem;
+        margin-bottom: 0.3rem;
+    }
+    .badge-risk-high {
+        background: rgba(239, 68, 68, 0.15);
+        color: #ef4444;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+        display: inline-block;
+        margin-right: 0.3rem;
+        margin-bottom: 0.3rem;
+    }
+    .shield-card {
+        background: rgba(59, 130, 246, 0.05);
+        border: 1px solid rgba(59, 130, 246, 0.15);
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -146,6 +187,7 @@ from career_recommender import (
 from education_advisor import EducationAdvisor
 from roadmap_generator import generate_roadmap
 from job_board import get_jobs_for_career
+from future_proofing import calculate_future_proof_score, get_shield_skills
 
 # Initialize Advisor Class
 @st.cache_resource
@@ -758,6 +800,56 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
             
+            # Calculate Future-Proofing Score
+            fp_score, low_risk, med_risk, high_risk = calculate_future_proof_score(manual_results['extracted_skills'])
+            shield_skills = get_shield_skills(manual_results['career'], manual_results['extracted_skills'])
+            
+            st.markdown("---")
+            st.subheader("⏳ Career Time Machine: 2030 Future-Proofing Index")
+            st.markdown("Analyze how resilient your current skills are against AI automation and check how to future-proof your career.")
+            
+            col_fp_left, col_fp_right = st.columns([1, 2])
+            
+            with col_fp_left:
+                with st.container(border=True):
+                    st.metric(label="2030 AI Resilience Index", value=f"{fp_score}%")
+                    if fp_score >= 70:
+                        st.success("🛡️ **Highly Resilient**: Your skills require deep human logic, empathy, or system-level coordination.")
+                    elif fp_score >= 45:
+                        st.warning("⚠️ **Transitioning**: Some of your operational skills are vulnerable to automation. Upskilling is recommended.")
+                    else:
+                        st.error("🚨 **High Risk**: Your profile relies heavily on repetitive or standardized tasks. Prioritize learning 'Shield Skills'.")
+            
+            with col_fp_right:
+                with st.container(border=True):
+                    st.markdown("#### Skill Risk Categorization")
+                    
+                    if low_risk:
+                        low_risk_tags = "".join(f'<span class="badge-risk-low">{s["name"]} ({s["risk"]}% risk)</span>' for s in low_risk)
+                        st.markdown(f"**Low Risk (Future-Proof)**:<br>{low_risk_tags}", unsafe_allow_html=True)
+                    
+                    if med_risk:
+                        med_risk_tags = "".join(f'<span class="badge-risk-medium">{s["name"]} ({s["risk"]}% risk)</span>' for s in med_risk)
+                        st.markdown(f"**Medium Risk (Transitioning)**:<br>{med_risk_tags}", unsafe_allow_html=True)
+                        
+                    if high_risk:
+                        high_risk_tags = "".join(f'<span class="badge-risk-high">{s["name"]} ({s["risk"]}% risk)</span>' for s in high_risk)
+                        st.markdown(f"**High Risk (Automating)**:<br>{high_risk_tags}", unsafe_allow_html=True)
+            
+            if shield_skills:
+                st.markdown("#### 🛡️ Recommended Shield Skills to Learn")
+                col_s1, col_s2, col_s3 = st.columns(3)
+                cols_s = [col_s1, col_s2, col_s3]
+                for s_idx, ss in enumerate(shield_skills):
+                    with cols_s[s_idx % 3]:
+                        st.markdown(f"""
+                        <div class="shield-card">
+                            <strong style="color:#60a5fa; font-size:0.95rem; display:block;">{ss['name']}</strong>
+                            <div style="font-size:0.7rem; color:#94a3b8; margin:0.25rem 0;">AI Risk: {ss['risk']}% | Trend: {ss['trend']}</div>
+                            <p style="font-size:0.8rem; color:#cbd5e1; margin:0; line-height:1.3;">{ss['desc']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
             # Job Openings Section
             st.markdown("---")
             st.subheader("💼 Recommended Job Openings")
@@ -897,6 +989,56 @@ else:
                             <p>{cert['description']}</p>
                             <p>🔑 Skills: {cert['skills']}</p>
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # Calculate Future-Proofing Score
+            fp_score, low_risk, med_risk, high_risk = calculate_future_proof_score(resume_results['extracted_skills'])
+            shield_skills = get_shield_skills(resume_results['career'], resume_results['extracted_skills'])
+            
+            st.markdown("---")
+            st.subheader("⏳ Career Time Machine: 2030 Future-Proofing Index")
+            st.markdown("Analyze how resilient your current skills are against AI automation and check how to future-proof your career.")
+            
+            col_fp_left, col_fp_right = st.columns([1, 2])
+            
+            with col_fp_left:
+                with st.container(border=True):
+                    st.metric(label="2030 AI Resilience Index", value=f"{fp_score}%")
+                    if fp_score >= 70:
+                        st.success("🛡️ **Highly Resilient**: Your skills require deep human logic, empathy, or system-level coordination.")
+                    elif fp_score >= 45:
+                        st.warning("⚠️ **Transitioning**: Some of your operational skills are vulnerable to automation. Upskilling is recommended.")
+                    else:
+                        st.error("🚨 **High Risk**: Your profile relies heavily on repetitive or standardized tasks. Prioritize learning 'Shield Skills'.")
+            
+            with col_fp_right:
+                with st.container(border=True):
+                    st.markdown("#### Skill Risk Categorization")
+                    
+                    if low_risk:
+                        low_risk_tags = "".join(f'<span class="badge-risk-low">{s["name"]} ({s["risk"]}% risk)</span>' for s in low_risk)
+                        st.markdown(f"**Low Risk (Future-Proof)**:<br>{low_risk_tags}", unsafe_allow_html=True)
+                    
+                    if med_risk:
+                        med_risk_tags = "".join(f'<span class="badge-risk-medium">{s["name"]} ({s["risk"]}% risk)</span>' for s in med_risk)
+                        st.markdown(f"**Medium Risk (Transitioning)**:<br>{med_risk_tags}", unsafe_allow_html=True)
+                        
+                    if high_risk:
+                        high_risk_tags = "".join(f'<span class="badge-risk-high">{s["name"]} ({s["risk"]}% risk)</span>' for s in high_risk)
+                        st.markdown(f"**High Risk (Automating)**:<br>{high_risk_tags}", unsafe_allow_html=True)
+            
+            if shield_skills:
+                st.markdown("#### 🛡️ Recommended Shield Skills to Learn")
+                col_s1, col_s2, col_s3 = st.columns(3)
+                cols_s = [col_s1, col_s2, col_s3]
+                for s_idx, ss in enumerate(shield_skills):
+                    with cols_s[s_idx % 3]:
+                        st.markdown(f"""
+                        <div class="shield-card">
+                            <strong style="color:#60a5fa; font-size:0.95rem; display:block;">{ss['name']}</strong>
+                            <div style="font-size:0.7rem; color:#94a3b8; margin:0.25rem 0;">AI Risk: {ss['risk']}% | Trend: {ss['trend']}</div>
+                            <p style="font-size:0.8rem; color:#cbd5e1; margin:0; line-height:1.3;">{ss['desc']}</p>
                         </div>
                         """, unsafe_allow_html=True)
             
