@@ -188,7 +188,6 @@ from education_advisor import EducationAdvisor
 from roadmap_generator import generate_roadmap
 from job_board import get_jobs_for_career
 from future_proofing import calculate_future_proof_score, get_shield_skills
-from labor_market import get_market_analysis, get_missing_skills
 
 # Initialize Advisor Class
 @st.cache_resource
@@ -801,65 +800,6 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
             
-            # Get Labor Market Stats & Missing Skills
-            market_stats = get_market_analysis(manual_results['career'])
-            missing_skills = get_missing_skills(manual_results['career'], manual_results['extracted_skills'])
-            
-            st.markdown("---")
-            st.subheader("📊 Labor Market Intelligence")
-            col_lm1, col_lm2, col_lm3 = st.columns(3)
-            with col_lm1:
-                with st.container(border=True):
-                    st.metric(label="Median Salary (India)", value=market_stats['median_salary'])
-            with col_lm2:
-                with st.container(border=True):
-                    st.metric(label="YoY Demand Growth", value=market_stats['demand_growth'])
-            with col_lm3:
-                with st.container(border=True):
-                    st.metric(label="Hiring Hotspots", value=", ".join(market_stats['top_cities']))
-            
-            # Skill Gap Simulator Section
-            st.markdown("---")
-            st.subheader("🎛️ Interactive Skill Gap Simulator")
-            st.markdown("Simulate learning missing skills to see how your career compatibility and future-proofing score will increase live!")
-            
-            if not missing_skills:
-                st.success("🎉 You already possess all core skills recommended for this career! No gaps to simulate.")
-                simulated_skills = manual_results['extracted_skills']
-            else:
-                sim_selected = st.multiselect(
-                    "Choose skills to simulate learning:",
-                    options=missing_skills,
-                    key="sim_manual_skills"
-                )
-                simulated_skills = manual_results['extracted_skills'] + sim_selected
-                
-            # Compute original vs simulated compatibility
-            _, orig_score = calculate_compatibility_score(manual_results['extracted_skills'], manual_results['career'])
-            _, sim_score = calculate_compatibility_score(simulated_skills, manual_results['career'])
-            
-            # Compute original vs simulated future-proofing
-            orig_fp, _, _, _ = calculate_future_proof_score(manual_results['extracted_skills'])
-            sim_fp, _, _, _ = calculate_future_proof_score(simulated_skills)
-            
-            col_sim1, col_sim2 = st.columns(2)
-            with col_sim1:
-                with st.container(border=True):
-                    score_diff = round(sim_score - orig_score, 2)
-                    st.metric(
-                        label="Simulated Skill Compatibility",
-                        value=f"{sim_score}%",
-                        delta=f"+{score_diff}% Increase" if score_diff > 0 else None
-                    )
-            with col_sim2:
-                with st.container(border=True):
-                    fp_diff = round(sim_fp - orig_fp, 2)
-                    st.metric(
-                        label="Simulated AI Resilience Index",
-                        value=f"{sim_fp}%",
-                        delta=f"+{fp_diff}% Increase" if fp_diff > 0 else None
-                    )
-            
             # Calculate Future-Proofing Score
             fp_score, low_risk, med_risk, high_risk = calculate_future_proof_score(manual_results['extracted_skills'])
             shield_skills = get_shield_skills(manual_results['career'], manual_results['extracted_skills'])
@@ -1051,65 +991,6 @@ else:
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
                         </div>
                         """, unsafe_allow_html=True)
-            
-            # Get Labor Market Stats & Missing Skills
-            market_stats = get_market_analysis(resume_results['career'])
-            missing_skills = get_missing_skills(resume_results['career'], resume_results['extracted_skills'])
-            
-            st.markdown("---")
-            st.subheader("📊 Labor Market Intelligence")
-            col_lm1, col_lm2, col_lm3 = st.columns(3)
-            with col_lm1:
-                with st.container(border=True):
-                    st.metric(label="Median Salary (India)", value=market_stats['median_salary'])
-            with col_lm2:
-                with st.container(border=True):
-                    st.metric(label="YoY Demand Growth", value=market_stats['demand_growth'])
-            with col_lm3:
-                with st.container(border=True):
-                    st.metric(label="Hiring Hotspots", value=", ".join(market_stats['top_cities']))
-            
-            # Skill Gap Simulator Section
-            st.markdown("---")
-            st.subheader("🎛️ Interactive Skill Gap Simulator")
-            st.markdown("Simulate learning missing skills to see how your career compatibility and future-proofing score will increase live!")
-            
-            if not missing_skills:
-                st.success("🎉 You already possess all core skills recommended for this career! No gaps to simulate.")
-                simulated_skills = resume_results['extracted_skills']
-            else:
-                sim_selected = st.multiselect(
-                    "Choose skills to simulate learning:",
-                    options=missing_skills,
-                    key="sim_resume_skills"
-                )
-                simulated_skills = resume_results['extracted_skills'] + sim_selected
-                
-            # Compute original vs simulated compatibility
-            _, orig_score = calculate_compatibility_score(resume_results['extracted_skills'], resume_results['career'])
-            _, sim_score = calculate_compatibility_score(simulated_skills, resume_results['career'])
-            
-            # Compute original vs simulated future-proofing
-            orig_fp, _, _, _ = calculate_future_proof_score(resume_results['extracted_skills'])
-            sim_fp, _, _, _ = calculate_future_proof_score(simulated_skills)
-            
-            col_sim1, col_sim2 = st.columns(2)
-            with col_sim1:
-                with st.container(border=True):
-                    score_diff = round(sim_score - orig_score, 2)
-                    st.metric(
-                        label="Simulated Skill Compatibility",
-                        value=f"{sim_score}%",
-                        delta=f"+{score_diff}% Increase" if score_diff > 0 else None
-                    )
-            with col_sim2:
-                with st.container(border=True):
-                    fp_diff = round(sim_fp - orig_fp, 2)
-                    st.metric(
-                        label="Simulated AI Resilience Index",
-                        value=f"{sim_fp}%",
-                        delta=f"+{fp_diff}% Increase" if fp_diff > 0 else None
-                    )
             
             # Calculate Future-Proofing Score
             fp_score, low_risk, med_risk, high_risk = calculate_future_proof_score(resume_results['extracted_skills'])
