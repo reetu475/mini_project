@@ -88,6 +88,39 @@ st.markdown("""
         border-radius: 4px;
         font-weight: bold;
     }
+    /* Job Board Card Styling */
+    .job-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: border-color 0.2s;
+    }
+    .job-card:hover {
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+    .badge-matched {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-right: 0.3rem;
+        display: inline-block;
+        margin-bottom: 0.3rem;
+    }
+    .badge-missing {
+        background: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        margin-right: 0.3rem;
+        display: inline-block;
+        margin-bottom: 0.3rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -112,6 +145,7 @@ from career_recommender import (
 )
 from education_advisor import EducationAdvisor
 from roadmap_generator import generate_roadmap
+from job_board import get_jobs_for_career
 
 # Initialize Advisor Class
 @st.cache_resource
@@ -723,6 +757,33 @@ else:
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
                         </div>
                         """, unsafe_allow_html=True)
+            
+            # Job Openings Section
+            st.markdown("---")
+            st.subheader("💼 Recommended Job Openings")
+            jobs = get_jobs_for_career(manual_results['career'], manual_results['extracted_skills'])
+            if not jobs:
+                st.info("No matching job openings found in your target area.")
+            else:
+                col_job1, col_job2, col_job3 = st.columns(3)
+                cols = [col_job1, col_job2, col_job3]
+                for idx, job in enumerate(jobs):
+                    with cols[idx % 3]:
+                        matched_badges = "".join(f'<span class="badge-matched">✓ {s}</span>' for s in job['matched_skills'])
+                        missing_badges = "".join(f'<span class="badge-missing">? {s}</span>' for s in job['missing_skills'])
+                        st.markdown(f"""
+                        <div class="job-card">
+                            <strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
+                            <div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
+                            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
+                            <div style="margin-bottom:0.8rem;">
+                                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
+                                {matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
+                                {missing_badges}
+                            </div>
+                            <a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
+                        </div>
+                        """, unsafe_allow_html=True)
 
     # ----------------- TAB 2: RESUME RESULTS -----------------
     with tab_resume:
@@ -838,5 +899,32 @@ else:
                             <p>{cert['description']}</p>
                             <p>🔑 Skills: {cert['skills']}</p>
                             <a href="{cert['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:#10b981;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">Register Now</button></a>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # Job Openings Section
+            st.markdown("---")
+            st.subheader("💼 Recommended Job Openings")
+            jobs = get_jobs_for_career(resume_results['career'], resume_results['extracted_skills'])
+            if not jobs:
+                st.info("No matching job openings found in your target area.")
+            else:
+                col_job1, col_job2, col_job3 = st.columns(3)
+                cols = [col_job1, col_job2, col_job3]
+                for idx, job in enumerate(jobs):
+                    with cols[idx % 3]:
+                        matched_badges = "".join(f'<span class="badge-matched">✓ {s}</span>' for s in job['matched_skills'])
+                        missing_badges = "".join(f'<span class="badge-missing">? {s}</span>' for s in job['missing_skills'])
+                        st.markdown(f"""
+                        <div class="job-card">
+                            <strong style="color:#f8fafc; font-size:1.05rem; display:block; margin-bottom:0.25rem;">{job['title']}</strong>
+                            <div style="font-size:0.85rem; color:#8b5cf6; font-weight:bold; margin-bottom:0.25rem;">🏢 {job['company']}</div>
+                            <div style="font-size:0.8rem; color:#94a3b8; margin-bottom:0.5rem;">📍 {job['location']} | 💰 {job['salary']}</div>
+                            <div style="margin-bottom:0.8rem;">
+                                <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.25rem; font-weight:bold;">Skill Alignment:</div>
+                                {matched_badges if matched_badges else '<span class="badge-matched" style="background:rgba(239,68,68,0.15);color:#ef4444;">No matching skills</span>'}
+                                {missing_badges}
+                            </div>
+                            <a href="{job['link']}" target="_blank" style="text-decoration:none;"><button style="background-color:rgba(139,92,246,0.2);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);padding:6px 12px;border-radius:6px;cursor:pointer;width:100%;font-weight:bold;">Quick Apply</button></a>
                         </div>
                         """, unsafe_allow_html=True)
