@@ -196,6 +196,51 @@ def get_advisor():
 
 advisor = get_advisor()
 
+def get_missing_skills(career, user_skills):
+    try:
+        import pandas as pd
+        df = pd.read_csv("datasets/careers.csv")
+    except Exception:
+        from career_recommender import DEFAULT_CAREERS
+        df = pd.DataFrame(DEFAULT_CAREERS)
+
+    match = df[df["Career"].str.lower() == career.lower()]
+    if match.empty:
+        match = df[df["Career"].str.lower().str.contains(career.lower())]
+        
+    if match.empty:
+        return []
+
+    career_skills_str = match.iloc[0]["Skills"].lower()
+    
+    try:
+        from skill_extractor import SKILLS
+    except ImportError:
+        from skill_extractor import DEFAULT_SKILLS as SKILLS
+        
+    career_skills = []
+    for skill in SKILLS:
+        skill_lower = skill.lower().strip()
+        import re
+        pattern = r'\b' + re.escape(skill_lower) + r'\b'
+        if re.search(pattern, career_skills_str):
+            career_skills.append(skill)
+            
+    user_skills_lower = [s.lower().strip() for s in user_skills]
+    missing_skills = []
+    
+    for cs in career_skills:
+        cs_lower = cs.lower().strip()
+        is_missing = True
+        for us in user_skills_lower:
+            if us == cs_lower or us in cs_lower or cs_lower in us:
+                is_missing = False
+                break
+        if is_missing and cs not in missing_skills:
+            missing_skills.append(cs)
+            
+    return missing_skills
+
 # SQLite Database Helper Functions
 def get_db_connection():
     conn = sqlite3.connect('users.db')
@@ -679,8 +724,21 @@ else:
             with col_m_left:
                 with st.container(border=True):
                     st.metric(label="Skill Compatibility Score", value=f"{manual_results['match_score']}%")
+                    st.progress(manual_results['match_score'] / 100.0)
+                    st.write(f"You are **{manual_results['match_score']}%** of the way to reaching your target career readiness goal!")
                     st.subheader(manual_results['career'])
                     st.write(f"Based on your profile inputs, your skills align closely with a **{manual_results['career']}** career path.")
+                
+                # Skills to Learn to Reach 100%
+                missing_s = get_missing_skills(manual_results['career'], manual_results['extracted_skills'])
+                with st.container(border=True):
+                    st.subheader("Target Skill Gaps")
+                    if missing_s:
+                        st.write("To reach **100% readiness** for this career path, prioritize learning these skills:")
+                        for s in missing_s:
+                            st.markdown(f"🔴 **{s}**")
+                    else:
+                        st.success("🎉 You possess all core skills recommended for this career track!")
                 
                 # Extracted Skills
                 with st.container(border=True):
@@ -871,8 +929,21 @@ else:
             with col_r_left:
                 with st.container(border=True):
                     st.metric(label="Skill Compatibility Score", value=f"{resume_results['match_score']}%")
+                    st.progress(resume_results['match_score'] / 100.0)
+                    st.write(f"You are **{resume_results['match_score']}%** of the way to reaching your target career readiness goal!")
                     st.subheader(resume_results['career'])
                     st.write(f"Based on your parsed resume, your skills align closely with a **{resume_results['career']}** career path.")
+                
+                # Skills to Learn to Reach 100%
+                missing_s = get_missing_skills(resume_results['career'], resume_results['extracted_skills'])
+                with st.container(border=True):
+                    st.subheader("Target Skill Gaps")
+                    if missing_s:
+                        st.write("To reach **100% readiness** for this career path, prioritize learning these skills:")
+                        for s in missing_s:
+                            st.markdown(f"🔴 **{s}**")
+                    else:
+                        st.success("🎉 You possess all core skills recommended for this career track!")
                 
                 # Extracted Skills
                 with st.container(border=True):
