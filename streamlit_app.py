@@ -255,11 +255,7 @@ if "autofill_data" not in st.session_state:
 NAME_REGEX = re.compile(r'^[a-zA-Z\s]{2,50}$')
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
 
-# Get Active API Key
-if "custom_groq_key" not in st.session_state:
-    st.session_state["custom_groq_key"] = ""
-
-active_api_key = get_config("GROQ_API_KEY") or st.session_state["custom_groq_key"]
+active_api_key = get_config("GROQ_API_KEY")
 
 
 # Profile rendering results loader
@@ -317,22 +313,12 @@ with st.sidebar:
     st.markdown('<div class="logo-text">🧭 PathFinder</div>', unsafe_allow_html=True)
     st.markdown('<div class="logo-sub">Career Discovery Engine</div>', unsafe_allow_html=True)
     st.markdown("---")
-    # API Key Input - Always visible so the user can see/override it
-    env_key = get_config("GROQ_API_KEY") or ""
-    current_key = st.session_state["custom_groq_key"] if st.session_state["custom_groq_key"] else env_key
-    
-    api_key_input = st.text_input(
-        "Groq API Key",
-        value=current_key,
-        type="password",
-        help="Enter your Groq API key from console.groq.com. Overrides the .env key if provided."
-    )
-    if api_key_input != st.session_state["custom_groq_key"]:
-        st.session_state["custom_groq_key"] = api_key_input
-        st.rerun()
-        
+    # API Key Input - Loaded automatically from environment / secrets
+    env_key = get_config("GROQ_API_KEY")
     if env_key:
-        st.caption("🔑 API key loaded from `.env` file.")
+        st.caption("🔑 Connected: Groq Cloud API enabled.")
+    else:
+        st.caption("⚠️ Disconnected: Running in local fallback mode.")
     st.markdown("---")
 
     
