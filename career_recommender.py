@@ -18,7 +18,7 @@ DEFAULT_CAREERS = [
 
 def recommend_career(user_skills):
     """
-    Matches user skills against career skill profiles using TF-IDF and Cosine Similarity.
+    Matches user skills against career skill profiles using a Hybrid Overlap-Cosine Similarity formula.
     Returns the recommended career name and the matching score (0-100).
     """
     if not user_skills:
@@ -47,12 +47,36 @@ def recommend_career(user_skills):
             tfidf_matrix[:-1]
         )
 
-        best_index = similarity.argmax()
+        import re
+        scores = []
+        for index, row in df.iterrows():
+            career_skills_str = row["Skills"]
+            
+            # Count word matches between user and career requirements
+            career_words = set(re.findall(r'\w+', career_skills_str.lower()))
+            user_words = set()
+            for s in user_skills:
+                user_words.update(re.findall(r'\w+', s.lower()))
+            
+            intersection = career_words.intersection(user_words)
+            overlap_score = len(intersection) / max(len(career_words), 1)
+            
+            cos_sim = float(similarity[0][index])
+            
+            # Hybrid score: 30% cosine similarity, 70% overlap score
+            hybrid_val = (cos_sim * 0.3 + overlap_score * 0.7)
+            
+            # Scale to a standard 0-100% representation (with a base of 30% if there is any overlap)
+            if hybrid_val > 0:
+                final_score = 30.0 + (hybrid_val * 70.0)
+            else:
+                final_score = 0.0
+                
+            scores.append(final_score)
+
+        best_index = int(np.argmax(scores))
         career = df.iloc[best_index]["Career"]
-        
-        # similarity is a 2D array: similarity[0][best_index]
-        score_val = similarity[0][best_index]
-        score = round(float(score_val) * 100, 2)
+        score = round(float(scores[best_index]), 2)
         
         if np.isnan(score) or score <= 0.0:
             score = 0.0
@@ -115,8 +139,7 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
 def calculate_compatibility_score(user_skills, target_career):
     """
     Calculates compatibility score between user skills and a specific target career.
-    Uses TF-IDF similarity against the career profile if found, otherwise computes similarity
-    with the target career name as a proxy representation.
+    Uses a Hybrid Overlap-Cosine Similarity formula.
     """
     if not user_skills or not target_career:
         return target_career, 0.0
@@ -149,7 +172,24 @@ def calculate_compatibility_score(user_skills, target_career):
         vectorizer = TfidfVectorizer()
         tfidf_matrix = vectorizer.fit_transform(documents)
         similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
-        score = round(float(similarity[0][0]) * 100, 2)
+        cos_sim = float(similarity[0][0])
+        
+        # Calculate overlap
+        import re
+        career_words = set(re.findall(r'\w+', career_profile_skills.lower()))
+        user_words = set()
+        for s in user_skills:
+            user_words.update(re.findall(r'\w+', s.lower()))
+            
+        intersection = career_words.intersection(user_words)
+        overlap_score = len(intersection) / max(len(career_words), 1)
+        
+        hybrid_val = (cos_sim * 0.3 + overlap_score * 0.7)
+        if hybrid_val > 0:
+            score = round(30.0 + (hybrid_val * 70.0), 2)
+        else:
+            score = 0.0
+            
         if np.isnan(score) or score <= 0.0:
             score = 0.0
         return career_name, score

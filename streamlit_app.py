@@ -241,19 +241,23 @@ with st.sidebar:
     st.markdown('<div class="logo-text">🧭 PathFinder</div>', unsafe_allow_html=True)
     st.markdown('<div class="logo-sub">Career Discovery Engine</div>', unsafe_allow_html=True)
     st.markdown("---")
+    # API Key Input - Always visible so the user can see/override it
+    env_key = get_config("GROQ_API_KEY") or ""
+    current_key = st.session_state["custom_groq_key"] if st.session_state["custom_groq_key"] else env_key
     
-    # API Key Input if not configured globally
-    if not get_config("GROQ_API_KEY"):
-        api_key_input = st.text_input(
-            "Groq API Key",
-            value=st.session_state["custom_groq_key"],
-            type="password",
-            help="Enter your Groq API key from console.groq.com to enable dynamic recommendations."
-        )
-        if api_key_input != st.session_state["custom_groq_key"]:
-            st.session_state["custom_groq_key"] = api_key_input
-            st.rerun()
-        st.markdown("---")
+    api_key_input = st.text_input(
+        "Groq API Key",
+        value=current_key,
+        type="password",
+        help="Enter your Groq API key from console.groq.com. Overrides the .env key if provided."
+    )
+    if api_key_input != st.session_state["custom_groq_key"]:
+        st.session_state["custom_groq_key"] = api_key_input
+        st.rerun()
+        
+    if env_key:
+        st.caption("🔑 API key loaded from `.env` file.")
+    st.markdown("---")
 
     
     st.subheader("Saved Profiles")
