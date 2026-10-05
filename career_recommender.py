@@ -1,12 +1,44 @@
-# career_recommender.py
-
 import os
 import re
 import json
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+import math
+from collections import Counter
+
+try:
+    import pandas as pd
+except Exception:
+    pd = None
+
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    import numpy as np
+    SKLEARN_AVAILABLE = True
+except Exception as e:
+    SKLEARN_AVAILABLE = False
+    TfidfVectorizer = None
+    cosine_similarity = None
+    np = None
+    print(f"Notice: Optional sklearn/numpy acceleration unavailable ({e}). Using pure-Python similarity engine.")
+
+
+def _pure_cosine_similarity(text1, text2):
+    """Calculates term frequency cosine similarity between two text strings using pure Python."""
+    try:
+        words1 = [w for w in re.findall(r'[a-zA-Z0-9#+.-]+', text1.lower()) if len(w) > 1]
+        words2 = [w for w in re.findall(r'[a-zA-Z0-9#+.-]+', text2.lower()) if len(w) > 1]
+        if not words1 or not words2:
+            return 0.0
+        c1, c2 = Counter(words1), Counter(words2)
+        all_words = set(c1.keys()).union(set(c2.keys()))
+        dot_prod = sum(c1.get(w, 0) * c2.get(w, 0) for w in all_words)
+        mag1 = math.sqrt(sum(v * v for v in c1.values()))
+        mag2 = math.sqrt(sum(v * v for v in c2.values()))
+        if mag1 == 0.0 or mag2 == 0.0:
+            return 0.0
+        return float(dot_prod / (mag1 * mag2))
+    except Exception:
+        return 0.0
 
 # Fallback career paths in case CSV fails to load
 DEFAULT_CAREERS = [
@@ -56,12 +88,20 @@ def recommend_top_careers(user_skills, top_n=5):
     user_doc = " ".join(user_skills)
     documents = career_skills + [user_doc]
 
-    try:
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(documents)
-        similarity = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1])
-    except Exception:
-        similarity = np.zeros((1, len(df)))
+    cos_sims = {}
+    if SKLEARN_AVAILABLE and TfidfVectorizer is not None:
+        try:
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(documents)
+            similarity = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1])
+            for idx in range(len(df)):
+                cos_sims[idx] = float(similarity[0][idx]) if idx < similarity.shape[1] else 0.0
+        except Exception:
+            for idx, c_str in enumerate(career_skills):
+                cos_sims[idx] = _pure_cosine_similarity(user_doc, str(c_str))
+    else:
+        for idx, c_str in enumerate(career_skills):
+            cos_sims[idx] = _pure_cosine_similarity(user_doc, str(c_str))
 
     user_words = set()
     for s in user_skills:
@@ -86,7 +126,7 @@ def recommend_top_careers(user_skills, top_n=5):
         missing_s = list(dict.fromkeys(missing_s))[:5]
         
         overlap_score = len(matched_words) / max(len(career_words), 1)
-        cos_sim = float(similarity[0][index]) if index < similarity.shape[1] else 0.0
+        cos_sim = cos_sims.get(index, 0.0)
         
         hybrid_val = (cos_sim * 0.35 + overlap_score * 0.65)
         if hybrid_val > 0:
@@ -257,13 +297,18 @@ def calculate_compatibility_score(user_skills, target_career):
     documents = [career_profile_skills, user_doc]
 
     try:
-        vectorizer = TfidfVectorizer()
-        tfidf_matrix = vectorizer.fit_transform(documents)
-        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
-        cos_sim = float(similarity[0][0])
+        if SKLEARN_AVAILABLE and TfidfVectorizer is not None:
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(documents)
+            similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])
+            cos_sim = float(similarity[0][0])
+        else:
+            cos_sim = _pure_cosine_similarity(user_doc, career_profile_skills)
+    except Exception:
+        cos_sim = _pure_cosine_similarity(user_doc, career_profile_skills)
         
+    try:
         # Calculate overlap
-        import re
         career_words = set(re.findall(r'\w+', career_profile_skills.lower()))
         user_words = set()
         for s in user_skills:
@@ -278,7 +323,7 @@ def calculate_compatibility_score(user_skills, target_career):
         else:
             score = 0.0
             
-        if np.isnan(score) or score <= 0.0:
+        if math.isnan(score) or score <= 0.0:
             score = 0.0
         return career_name, score
     except Exception as e:
