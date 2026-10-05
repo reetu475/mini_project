@@ -574,6 +574,19 @@ if st.session_state["active_profile_id"] is None:
                 type=MULTIMODAL_TYPES,
                 help="Supports Documents (PDF, DOCX), Images (PNG, JPG), Audio (MP3, WAV), and Video (MP4, MOV)."
             )
+            
+            if uploaded_file is not None:
+                ext_preview = os.path.splitext(uploaded_file.name)[1].lower()
+                if ext_preview in [".png", ".jpg", ".jpeg", ".webp"]:
+                    st.image(uploaded_file, caption=f"📸 Preview: {uploaded_file.name}", use_container_width=True)
+                    uploaded_file.seek(0)
+                elif ext_preview in [".mp3", ".wav", ".m4a", ".ogg"]:
+                    st.audio(uploaded_file)
+                    uploaded_file.seek(0)
+                elif ext_preview in [".mp4", ".mov", ".webm"]:
+                    st.video(uploaded_file)
+                    uploaded_file.seek(0)
+                    
             target_career = st.text_input("Target / Aiming Career (Optional)", placeholder="e.g. Data Scientist, DevOps Engineer")
             
             col_direct, col_autofill = st.columns(2)
