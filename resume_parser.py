@@ -186,38 +186,23 @@ def extract_text_from_txt(txt_bytes):
 
 def extract_text_from_image(image_bytes):
     """
-    Robust multimodal OCR extractor for image resumes (JPEG, PNG, WEBP, etc.).
-    Uses a multi-tier strategy:
-    1. EXIF auto-rotation and dimension clamping (resolves phone camera tilt/scale issues)
-    2. Primary: RapidOCR with sensitive box threshold (0.25) and unclip expansion
-    3. Secondary: Windows Native Media OCR (winocr) for clear fallback
-    4. Tertiary: CLAHE contrast-enhanced adaptive OCR for low-contrast/dark/shadowed photos
-    5. Rotation sweep: 90, 180, 270 degree rotation if no text was detected initially
+    Robust cross-platform OCR extractor for image resumes (JPEG, PNG, WEBP, etc.).
+    Fully compatible with Windows, macOS, and Linux (Streamlit Cloud).
     """
     if not image_bytes:
         return ""
 
-    from PIL import Image, ImageOps, ImageFile
-    import numpy as np
-    import cv2
-    ImageFile.LOAD_TRUNCATED_IMAGES = True
-    Image.MAX_IMAGE_PIXELS = None
-
     try:
+        from PIL import Image, ImageOps, ImageFile, ImageEnhance
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        Image.MAX_IMAGE_PIXELS = None
         raw_pil = Image.open(io.BytesIO(image_bytes))
         pil_img = ImageOps.exif_transpose(raw_pil).convert('RGB')
     except Exception as e:
-        print(f"PIL Image open failed: {e}. Trying cv2.imdecode...")
-        try:
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            cv_img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if cv_img is None:
-                return ""
-            pil_img = Image.fromarray(cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB))
-        except Exception:
-            return ""
+        print(f"PIL Image open error: {e}")
+        return ""
 
-    # Scale image to optimal range (800px to 2200px)
+    # Scale image to optimal range (900px to 2200px)
     w, h = pil_img.size
     max_dim = 2200
     min_dim = 900
@@ -228,21 +213,25 @@ def extract_text_from_image(image_bytes):
         scale = min_dim / float(min(w, h))
         pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
 
-    img_np = np.array(pil_img)
     extracted_lines = []
 
-    # Strategy 1: RapidOCR with sensitive detection parameters
+    # Strategy 1: RapidOCR (Primary cross-platform ONNX engine)
+    engine = None
     try:
         from rapidocr_onnxruntime import RapidOCR
+        import numpy as np
         engine = RapidOCR()
+        img_np = np.array(pil_img)
         result, _ = engine(img_np, box_thresh=0.25, text_score=0.3, unclip_ratio=1.8)
         if result:
             extracted_lines = [r[1].strip() for r in result if r and len(r) > 1 and r[1].strip()]
+    except ImportError:
+        print("Notice: rapidocr_onnxruntime is not installed.")
     except Exception as e:
         print(f"RapidOCR primary attempt notice: {e}")
 
-    # Strategy 2: If RapidOCR found very little text, try Windows Native OCR (winocr)
-    if len(" ".join(extracted_lines)) < 30:
+    # Strategy 2: If on Windows and need fallback, try native winocr
+    if len(" ".join(extracted_lines)) < 30 and sys.platform == 'win32':
         try:
             import winocr
             win_res = winocr.recognize_pil_sync(pil_img, lang='en')
@@ -250,31 +239,31 @@ def extract_text_from_image(image_bytes):
                 win_text = win_res['text'].strip()
                 if len(win_text) > len(" ".join(extracted_lines)):
                     return win_text
-        except Exception as e:
-            print(f"winocr attempt notice: {e}")
+        except Exception:
+            pass
 
-    # Strategy 3: Contrast enhancement (CLAHE) for low-contrast/dark/shadowed photos
-    if len(" ".join(extracted_lines)) < 30:
+    # Strategy 3: Contrast Enhancement via pure PIL (no cv2 required!)
+    if engine and len(" ".join(extracted_lines)) < 30:
         try:
-            gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-            enhanced = clahe.apply(gray)
-            enhanced_rgb = cv2.cvtColor(enhanced, cv2.COLOR_GRAY2RGB)
-            result_clahe, _ = engine(enhanced_rgb, box_thresh=0.2, text_score=0.25)
+            from PIL import ImageEnhance
+            import numpy as np
+            enhancer = ImageEnhance.Contrast(pil_img)
+            enhanced_pil = enhancer.enhance(1.8)
+            result_clahe, _ = engine(np.array(enhanced_pil), box_thresh=0.2, text_score=0.25)
             if result_clahe:
                 clahe_lines = [r[1].strip() for r in result_clahe if r and len(r) > 1 and r[1].strip()]
                 if len(clahe_lines) > len(extracted_lines):
                     extracted_lines = clahe_lines
         except Exception as e:
-            print(f"CLAHE contrast attempt notice: {e}")
+            print(f"Contrast attempt notice: {e}")
 
     # Strategy 4: Rotation sweep (in case image is sideways without EXIF tags)
-    if len(" ".join(extracted_lines)) < 30:
+    if engine and len(" ".join(extracted_lines)) < 30:
         for angle in [90, 180, 270]:
             try:
+                import numpy as np
                 rot_img = pil_img.rotate(angle, expand=True)
-                rot_np = np.array(rot_img)
-                res_rot, _ = engine(rot_np, box_thresh=0.25, text_score=0.3)
+                res_rot, _ = engine(np.array(rot_img), box_thresh=0.25, text_score=0.3)
                 if res_rot:
                     rot_lines = [r[1].strip() for r in res_rot if r and len(r) > 1 and r[1].strip()]
                     if len(" ".join(rot_lines)) > len(" ".join(extracted_lines)):
