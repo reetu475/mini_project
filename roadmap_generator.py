@@ -190,17 +190,30 @@ Guidelines:
         from resume_parser import get_groq_chat_model
         model_name = get_groq_chat_model(client)
         
-        completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            model=model_name,
-            temperature=0.3,
-            max_tokens=1000,
-        )
+        completion = None
+        for attempt in range(2):
+            try:
+                completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    model=model_name,
+                    temperature=0.3,
+                    max_tokens=420 if attempt == 0 else 260,
+                )
+                break
+            except Exception as req_err:
+                err_str = str(req_err).lower()
+                if ("429" in err_str or "rate_limit" in err_str) and attempt == 0:
+                    import time
+                    print("Groq rate limit encountered. Retrying with compact token budget...")
+                    time.sleep(1.5)
+                    continue
+                else:
+                    raise req_err
         
         response_text = completion.choices[0].message.content
         print(f"Groq API ({model_name}) completed successfully.")
@@ -210,15 +223,19 @@ Guidelines:
         
         # If parsing succeeded, return it
         if parsed_steps and len(parsed_steps) >= 3:
-            return parsed_steps, f"Generated dynamically by Groq AI (Llama-3.1-8B)"
+            return parsed_steps, f"Generated dynamically by Groq AI ({model_name})"
         else:
             print("Regex parsing of Groq response yielded insufficient steps. Falling back to local database.")
-            print(f"Raw Response:\n{response_text}")
-            return LOCAL_ROADMAPS.get(career, DEFAULT_ROADMAP), "Local Database Fallback (Groq Output Formatting Mismatch)"
+            return LOCAL_ROADMAPS.get(career, DEFAULT_ROADMAP), "Curated Industry Roadmap"
             
     except Exception as e:
-        print(f"Error calling Groq API: {e}. Falling back to local database.")
-        return LOCAL_ROADMAPS.get(career, DEFAULT_ROADMAP), f"Local Database Fallback (Groq API Error: {str(e)})"
+        print(f"Notice calling Groq API: {e}. Falling back to curated database.")
+        err_msg = str(e).lower()
+        if "429" in err_msg or "rate_limit" in err_msg:
+            source_badge = "Curated Industry Roadmap (AI Rate-Limit Active)"
+        else:
+            source_badge = "Curated Industry Roadmap"
+        return LOCAL_ROADMAPS.get(career, DEFAULT_ROADMAP), source_badge
 
 
 if __name__ == "__main__":

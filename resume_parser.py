@@ -263,7 +263,7 @@ def parse_image_resume_with_vision(image_bytes, api_key=None):
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_str}"}}
                 ]
             }],
-            max_tokens=1000,
+            max_tokens=450,
             temperature=0.0,
             response_format={"type": "json_object"}
         )
@@ -356,7 +356,7 @@ def extract_text_from_image(image_bytes, api_key=None):
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_str}"}}
                     ]
                 }],
-                max_tokens=1000,
+                max_tokens=450,
                 temperature=0.0
             )
             v_text = completion.choices[0].message.content.strip()
@@ -602,7 +602,7 @@ def parse_resume_text(text, api_key=None):
                 model=model_name,
                 temperature=0.0,
                 response_format={"type": "json_object"},
-                max_tokens=600
+                max_tokens=300
             )
             response_text = completion.choices[0].message.content.strip()
             json_match = re.search(r'(\{.*\})', response_text, re.DOTALL)

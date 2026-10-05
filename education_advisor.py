@@ -230,19 +230,32 @@ class EducationAdvisor:
                 api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
             client = Groq(api_key=api_key)
             prompt = f"""
-Suggest 3 popular online courses and 3 professional certifications for a career in "{career}".
-For each, provide: Title, Provider, Type ("Course" or "Certification"), Skills (comma-separated list of target skills), Description, and Link (a realistic URL to Coursera, Udemy, or vendor registration).
-Return ONLY a JSON list of objects, each with keys "title", "provider", "type", "skills", "description", and "link". Do not include markdown formatting or explanation.
+Suggest 2 top online courses and 2 certifications for a career in "{career}".
+For each item return: title, provider, type ("Course" or "Certification"), skills (concise comma-separated list), description (1 short sentence), and link (realistic URL).
+Return ONLY a JSON list of objects with keys "title", "provider", "type", "skills", "description", "link". No markdown.
 """
             from resume_parser import get_groq_chat_model
             model_name = get_groq_chat_model(client)
             
-            completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model=model_name,
-                temperature=0.3,
-                max_tokens=1000
-            )
+            completion = None
+            for attempt in range(2):
+                try:
+                    completion = client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        model=model_name,
+                        temperature=0.3,
+                        max_tokens=320 if attempt == 0 else 220
+                    )
+                    break
+                except Exception as req_err:
+                    err_str = str(req_err).lower()
+                    if ("429" in err_str or "rate_limit" in err_str) and attempt == 0:
+                        import time
+                        time.sleep(1.5)
+                        continue
+                    else:
+                        raise req_err
+
             response_text = completion.choices[0].message.content.strip()
             
             json_match = re.search(r'(\[.*\])', response_text, re.DOTALL)
@@ -261,7 +274,7 @@ Return ONLY a JSON list of objects, each with keys "title", "provider", "type", 
                         })
                     return recommendations
         except Exception as e:
-            print(f"Error in Groq educational recommendation: {e}. Falling back to ChromaDB.")
+            print(f"Notice in Groq educational recommendation: {e}. Falling back to ChromaDB.")
             
         return self.get_recommendations(career, limit)
     def save_user_profile(self, profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type, background=True):

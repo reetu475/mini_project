@@ -314,6 +314,18 @@ EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$')
 
 active_api_key = get_config("GROQ_API_KEY")
 
+def format_roadmap_badge(source_text):
+    if not source_text:
+        return "Curated Roadmap"
+    if "rate_limit" in source_text.lower() or "429" in source_text:
+        return "Curated Industry Roadmap (AI Rate-Limit Active)"
+    if "error" in source_text.lower() or "exception" in source_text.lower():
+        return "Curated Industry Roadmap"
+    if len(source_text) > 50:
+        if "groq" in source_text.lower():
+            return "Groq AI Generated"
+        return "Curated Industry Roadmap"
+    return source_text
 
 # Profile rendering results loader
 def get_profile_results_context(row):
@@ -813,7 +825,7 @@ else:
             with col_m_right:
                 # Roadmap steps
                 with st.container(border=True):
-                    st.subheader(f"Educational Roadmap ({manual_results['roadmap_source']})")
+                    st.subheader(f"Educational Roadmap ({format_roadmap_badge(manual_results['roadmap_source'])})")
                     for step in manual_results['roadmap_steps']:
                         st.markdown(f"""
                         <div class="timeline-node">
@@ -1018,7 +1030,7 @@ else:
             with col_r_right:
                 # Roadmap steps
                 with st.container(border=True):
-                    st.subheader(f"Educational Roadmap ({resume_results['roadmap_source']})")
+                    st.subheader(f"Educational Roadmap ({format_roadmap_badge(resume_results['roadmap_source'])})")
                     for step in resume_results['roadmap_steps']:
                         st.markdown(f"""
                         <div class="timeline-node">
