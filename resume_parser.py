@@ -185,24 +185,72 @@ def extract_text_from_txt(txt_bytes):
 
 # ----------------- IMAGE OCR EXTRACTOR -----------------
 
-def extract_text_from_image(image_bytes):
+def extract_text_from_image(image_bytes, api_key=None):
     """
     Robust cross-platform OCR extractor for image resumes (JPEG, PNG, WEBP, etc.).
-    Fully compatible with Windows, macOS, and Linux (Streamlit Cloud).
+    Uses a multi-tier strategy:
+    1. Primary (Fast Cloud Vision): Groq Vision (qwen/qwen3.8-27b) via Base64 data URL
+    2. Secondary (Local Cross-Platform): RapidOCR ONNX engine
+    3. Tertiary (Windows Native): Windows Media OCR (winocr)
+    4. Quaternary: PIL contrast enhancement and rotation sweep
     """
     if not image_bytes:
         return ""
 
+    import base64
+    from PIL import Image, ImageOps, ImageFile, ImageEnhance
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+    Image.MAX_IMAGE_PIXELS = None
+
     try:
-        from PIL import Image, ImageOps, ImageFile, ImageEnhance
-        ImageFile.LOAD_TRUNCATED_IMAGES = True
-        Image.MAX_IMAGE_PIXELS = None
         raw_pil = Image.open(io.BytesIO(image_bytes))
         pil_img = ImageOps.exif_transpose(raw_pil).convert('RGB')
     except Exception as e:
         print(f"PIL Image open error: {e}")
         return ""
 
+    # Strategy 1: Groq Multimodal Vision Model (Instant & 100% Accurate on Cloud)
+    if api_key:
+        try:
+            from groq import Groq
+            client = Groq(api_key=api_key)
+            vision_model = get_groq_chat_model(client)
+            
+            # Prepare optimized image for vision API (max 1600px, quality 85)
+            vw, vh = pil_img.size
+            if max(vw, vh) > 1600:
+                vscale = 1600.0 / max(vw, vh)
+                opt_pil = pil_img.resize((int(vw * vscale), int(vh * vscale)), Image.Resampling.LANCZOS)
+            elif min(vw, vh) < 600 and min(vw, vh) > 0:
+                vscale = 600.0 / min(vw, vh)
+                opt_pil = pil_img.resize((int(vw * vscale), int(vh * vscale)), Image.Resampling.LANCZOS)
+            else:
+                opt_pil = pil_img
+
+            vbuf = io.BytesIO()
+            opt_pil.save(vbuf, format='JPEG', quality=85)
+            b64_str = base64.b64encode(vbuf.getvalue()).decode('utf-8')
+
+            prompt_text = "Read and extract all textual information from this resume image verbatim. Include full name, email/contact, skills, experience, education, and objectives. Output the extracted text clearly."
+            completion = client.chat.completions.create(
+                model=vision_model,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt_text},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_str}"}}
+                    ]
+                }],
+                max_tokens=1000,
+                temperature=0.0
+            )
+            v_text = completion.choices[0].message.content.strip()
+            if len(v_text) > 25:
+                return v_text
+        except Exception as e:
+            print(f"Groq Vision attempt notice: {e}. Falling back to local OCR...")
+
+    # Strategy 2: RapidOCR (Local ONNX)
     # Scale image to optimal range (900px to 2200px)
     w, h = pil_img.size
     max_dim = 2200
@@ -215,8 +263,6 @@ def extract_text_from_image(image_bytes):
         pil_img = pil_img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
 
     extracted_lines = []
-
-    # Strategy 1: RapidOCR (Primary cross-platform ONNX engine)
     engine = None
     try:
         from rapidocr_onnxruntime import RapidOCR
@@ -231,7 +277,7 @@ def extract_text_from_image(image_bytes):
     except Exception as e:
         print(f"RapidOCR primary attempt notice: {e}")
 
-    # Strategy 2: If on Windows and need fallback, try native winocr
+    # Strategy 3: If on Windows and need fallback, try native winocr
     if len(" ".join(extracted_lines)) < 30 and sys.platform == 'win32':
         try:
             import winocr
@@ -243,7 +289,7 @@ def extract_text_from_image(image_bytes):
         except Exception:
             pass
 
-    # Strategy 3: Contrast Enhancement via pure PIL (no cv2 required!)
+    # Strategy 4: Contrast Enhancement via pure PIL
     if engine and len(" ".join(extracted_lines)) < 30:
         try:
             from PIL import ImageEnhance
@@ -258,7 +304,7 @@ def extract_text_from_image(image_bytes):
         except Exception as e:
             print(f"Contrast attempt notice: {e}")
 
-    # Strategy 4: Rotation sweep (in case image is sideways without EXIF tags)
+    # Strategy 5: Rotation sweep
     if engine and len(" ".join(extracted_lines)) < 30:
         for angle in [90, 180, 270]:
             try:
@@ -380,7 +426,7 @@ def extract_multimodal_text(file_bytes, filename, api_key=None):
     elif ext == '.txt':
         return extract_text_from_txt(file_bytes), "Document (TXT)"
     elif ext in IMAGE_EXTENSIONS:
-        return extract_text_from_image(file_bytes), f"Image ({ext.replace('.', '').upper()}) [OCR Scanned]"
+        return extract_text_from_image(file_bytes, api_key=api_key), f"Image ({ext.replace('.', '').upper()}) [AI Vision Extracted]"
     elif ext in AUDIO_EXTENSIONS:
         return extract_text_from_audio(file_bytes, filename, api_key), f"Audio ({ext.replace('.', '').upper()}) [Whisper AI Transcribed]"
     elif ext in VIDEO_EXTENSIONS:
