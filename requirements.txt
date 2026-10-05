@@ -10,5 +10,6 @@ groq
 pypdf
 python-docx
 imageio-ffmpeg
+Pillow
 rapidocr_onnxruntime
 opencv-python-headless
