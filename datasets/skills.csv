@@ -1,516 +1,372 @@
 Skill
-Python
-Java
-C
-C++
-JavaScript
-React
-NodeJS
-SQL
-MySQL
-MongoDB
-Machine Learning
-Deep Learning
-NLP
-TensorFlow
-PyTorch
-Computer Vision
-Power BI
-Tableau
-Excel
-AWS
-Azure
-Docker
-Kubernetes
-Linux
-Networking
-Cyber Security
-DSA
-DBMS
-OOP
-Cloud
-AI
-Artificial Intelligence
-Cybersecurity
-Finance
-Accounting
-Financial Modeling
-Valuation
-Portfolio Management
-Auditing
-SEO
-Copywriting
-Social Media
-Google Ads
-Branding
-Content Strategy
-Figma
-UI/UX
-Design
-Wireframing
-Prototyping
-Illustrator
-Photoshop
-Canva
-Recruitment
-HR
-Management
-Talent Acquisition
-Communication
-CAD
-SolidWorks
-AutoCAD
-Thermodynamics
-MATLAB
-Manufacturing
-Fluid Mechanics
-Engineering
-Writing
-Editing
-Blogging
-Research
-HTML
-CSS
-Data Analytics
-Statistics
-R
-Project Management
-Agile
-Sales
-Public Relations
-Negotiation
-Financial Analysis
-Product Management
-Data Visualization
-Information Security
-Cloud Computing
-DevOps
-Git
-GitHub
-Spring Boot
-Angular
-Vue
-TypeScript
-PHP
-Laravel
-Python Scripting
-Technical Writing
-Creative Writing
-Market Research
-Customer Relationship Management
-CRM
-Help Desk
-System Administration
-Linux Administration
-Network Administration
-Data Entry
-Business Analysis
-Business Development
-Operations Management
-Supply Chain Management
-Logistics
-Financial Reporting
-Taxation
-Cost Accounting
-Brand Management
-Digital Marketing
-Email Marketing
-Content Marketing
-SEO Optimization
-Search Engine Optimization
-SEM
-Google Analytics
-UI Design
-UX Design
-Graphic Design
-Vector Illustration
 3D Modeling
-Drafting
-Circuit Design
-Microcontrollers
-Embedded Systems
-Robotics
-Mechatronics
-HVAC
-Stress Analysis
-FEA
-Finite Element Analysis
-CFD
-Computational Fluid Dynamics
-CNC Programming
-Quality Assurance
-QA Testing
-Scrum
-UI Development
-Frontend Development
-Backend Development
-Fullstack Development
-API Development
-RESTful APIs
-GraphQL
-Flask
-Django
-FastAPI
-jQuery
-Bootstrap
-Sass
-Less
-WordPress
-Shopify
-Webflow
-Wix
-Squarespace
-Magento
-WooCommerce
-PPC
-Pay Per Click
-Social Media Marketing
-SMM
-Influencer Marketing
-Affiliate Marketing
-Copy Editing
-Proofreading
-Technical Editing
-Ghostwriting
-Screenwriting
-Playwriting
-Creative Writing
-Poetry
-Blogging
-Copywriting
-SEO Writing
-Content Writing
-Feature Writing
-Journalism
-Reporting
-News Writing
-Interviewing
-Fact Checking
-Plagiarism Detection
-Reference Management
-Citation Styles
+AI
+AI Agents
 APA
-MLA
-Chicago
-IEEE
-Harvard
-LaTeX
-Markdown
-RestructuredText
-AsciiDoc
-PDF
-Word
-PowerPoint
-Keynote
-Google Slides
-Prezi
-Canva
-Figma
-Adobe XD
-Sketch
-InVision
-Balsamiq
-Axure
-Marvel
-Proto.io
-Framer
-Principle
-Origami Studio
-Flinto
-Zeplin
-Avocode
-InVision DSM
-Zeroheight
-Lottie
-After Effects
-Premiere Pro
-Final Cut Pro
-DaVinci Resolve
-Audition
-Logic Pro
-Pro Tools
-GarageBand
+API Development
+ARM Cortex
+AWS
+AWS Bedrock
 Ableton Live
-FL Studio
-Cubase
-Reaper
-Studio One
-Audacity
-WavePad
-GoldWave
-Adobe Audition
-FL Studio
-GarageBand
-Logic Pro
-MainStage
-Digital Performer
-Reason
-Bitwig Studio
-Mixcraft
-MuLab
-Harrison Mixbus
-Qtour
-QMix
-QLab
-Isadora
-MaxMSP
-Pure Data
-SuperCollider
-Chuck
-Csound
-Faust
-SuperCollider
-Pure Data
-MaxMSP
-Isadora
-QLab
-QMix
-Qtour
-Harrison Mixbus
-MuLab
-Bitwig Studio
-Reason
-Digital Performer
-MainStage
-Logic Pro
-GarageBand
-FL Studio
-Audacity
-WavePad
-GoldWave
-Adobe Audition
-Pro Tools
-Logic Pro
-Audition
-DaVinci Resolve
-Final Cut Pro
-Premiere Pro
-After Effects
-Lottie
-Zeroheight
-InVision DSM
-Avocode
-Zeplin
-Flinto
-Principle
-Framer
-Proto.io
-Marvel
-Axure
-Balsamiq
-InVision
-Sketch
-Adobe XD
-Figma
-Canva
-Prezi
-Google Slides
-Keynote
-PowerPoint
-Word
-PDF
-AsciiDoc
-RestructuredText
-Markdown
-LaTeX
-Harvard
-IEEE
-Chicago
-MLA
-APA
-Citation Styles
-Reference Management
-Fact Checking
-Plagiarism Detection
-Interviewing
-News Writing
-Reporting
-Journalism
-Feature Writing
-Content Writing
-SEO Writing
-Copywriting
-Poetry
-Screenwriting
-Ghostwriting
-Technical Editing
-Proofreading
-Copy Editing
-Affiliate Marketing
-Influencer Marketing
-SMM
-Social Media Marketing
-PPC
-Pay Per Click
-WooCommerce
-Magento
-Squarespace
-Wix
-Webflow
-Shopify
-WordPress
-Less
-Sass
-Bootstrap
-jQuery
-FastAPI
-Django
-Flask
-GraphQL
-RESTful APIs
-API Development
-Fullstack Development
-Backend Development
-Frontend Development
-UI Development
-Scrum
-QA Testing
-Quality Assurance
-CNC Programming
-CFD
-Computational Fluid Dynamics
-FEA
-Finite Element Analysis
-Stress Analysis
-HVAC
-Mechatronics
-Robotics
-Embedded Systems
-Microcontrollers
-Circuit Design
-Drafting
-3D Modeling
-Vector Illustration
-Graphic Design
-UX Design
-UI Design
-Google Analytics
-SEM
-Search Engine Optimization
-SEO Optimization
-Content Marketing
-Email Marketing
-Digital Marketing
-Brand Management
-Cost Accounting
-Taxation
-Financial Reporting
-Logistics
-Supply Chain Management
-Operations Management
-Business Development
-Business Analysis
-Data Entry
-Network Administration
-Linux Administration
-System Administration
-Help Desk
-CRM
-Customer Relationship Management
-Market Research
-Creative Writing
-Technical Writing
-PHP
-TypeScript
-Vue
-Angular
-Spring Boot
-GitHub
-Git
-DevOps
-Cloud Computing
-Information Security
-Data Visualization
-Product Management
-Financial Analysis
-Negotiation
-Public Relations
-Sales
-Agile
-Project Management
-R
-Statistics
-Data Analytics
-CSS
-HTML
-Research
-Blogging
-Editing
-Writing
-Engineering
-Fluid Mechanics
-Manufacturing
-MATLAB
-Thermodynamics
-AutoCAD
-SolidWorks
-CAD
-Communication
-Talent Acquisition
-Management
-HR
-Recruitment
-Canva
-Photoshop
-Illustrator
-Prototyping
-Wireframing
-Design
-UI/UX
-Figma
-Content Strategy
-Branding
-Google Ads
-Social Media
-Copywriting
-SEO
-Auditing
-Portfolio Management
-Valuation
-Financial Modeling
 Accounting
-Finance
-Cybersecurity
-AI
+Adobe Audition
+Adobe XD
+Affiliate Marketing
+After Effects
+Agentic AI
+Agile
+Airflow
+Angular
+Anthropic Claude API
+Apache Airflow
+Apache Kafka
+Apache Spark
+Arduino
+ArgoCD
 Artificial Intelligence
-Cyber
-Cloud
-OOP
-DBMS
-DSA
-Cyber Security
-Networking
-Linux
-Kubernetes
-Docker
+AsciiDoc
+Audacity
+Auditing
+Audition
+AutoCAD
+AutoGen
+Autonomous Systems
+Avocode
+Axure
 Azure
-AWS
-Excel
-Tableau
-Power BI
-Computer Vision
-PyTorch
-TensorFlow
-NLP
-Deep Learning
-Machine Learning
-MongoDB
-MySQL
-SQL
-NodeJS
-React
-JavaScript
-C++
+Azure OpenAI
+Backend Development
+Balsamiq
+Bitwig Studio
+Blogging
+Bootstrap
+Brand Management
+Branding
+Business Analysis
+Business Development
 C
-Java
-Python
-Civil Engineering
+C++
+CAD
+CFD
+CI/CD
+CNC Programming
+CRM
+CSS
+Canva
+Chain-of-Thought
+Chicago
+ChromaDB
+Chuck
+Circuit Design
+Citation Styles
 Civil Engineer
-Structural Engineering
+Civil Engineering
+Cloud
+Cloud AI
+Cloud Computing
+Cloud Security
+Cohere
+Communication
+Computational Fluid Dynamics
+Computer Vision
 Concrete Design
 Construction Management
-Surveying
-Soil Mechanics
-Quantity Surveying
+Content Marketing
+Content Strategy
+Content Writing
+Copy Editing
+Copywriting
+Cost Accounting
+Creative Writing
+CrewAI
+Csound
+Cubase
+Customer Relationship Management
+Cyber
+Cyber Security
+Cybersecurity
+DBMS
+DPO
+DSA
+DVC
+DaVinci Resolve
+Data Analytics
+Data Build Tool
+Data Entry
+Data Lakehouse
+Data Visualization
+Databricks
+Deep Learning
+DeepSpeed
+Delta Lake
+Design
+DevOps
+DevSecOps
+Digital Marketing
+Digital Performer
+Django
+Docker
+Drafting
+ESP32
+Edge AI
+Edge Impulse
+Editing
+Email Marketing
+Embedded C
+Embedded Systems
+Embeddings
+Engineering
 Estimation
+Excel
+FEA
+FL Studio
+Fact Checking
+FastAPI
+Faust
+Feast
+Feature Store
+Feature Writing
+Few-Shot Prompting
+Figma
+Final Cut Pro
+Finance
+Financial Analysis
+Financial Modeling
+Financial Reporting
+Fine-Tuning
+Finite Element Analysis
+Flask
+Flinto
+Fluid Mechanics
+Framer
+Frontend Development
+Fullstack Development
+GCP Vertex AI
+GarageBand
+Generative AI
 Geotechnical Engineering
+Ghostwriting
+Git
+GitHub
+GitHub Actions
+GoldWave
+Google Ads
+Google Analytics
+Google Slides
+Grafana
+GraphQL
+Graphic Design
+Groq API
+HR
+HTML
+HVAC
+Harrison Mixbus
+Harvard
+Helm
+Help Desk
+Hugging Face
+HuggingFace
+IAM
+IEEE
+Illustrator
+Image Segmentation
+InVision
+InVision DSM
+Influencer Marketing
+Information Security
+Interviewing
+Isadora
+Java
+JavaScript
+Journalism
+Kalman Filter
+Keras
+Keynote
+Kubeflow
+Kubernetes
+LLMs
+LaTeX
+LangChain
+LangGraph
+Laravel
+Large Language Models
+Less
+LiDAR
+Linux
+Linux Administration
+LlamaIndex
+LoRA
+Logic Pro
+Logistics
+Lottie
+MATLAB
+MLA
+MLOps
+MLflow
+Machine Learning
+Magento
+MainStage
+Management
+Manufacturing
+Markdown
+Market Research
+Marvel
+MaxMSP
+Mechatronics
+Microcontrollers
+Milvus
+Mistral AI
+Mixcraft
+Model Alignment
+Model Monitoring
+MongoDB
+MuLab
+MySQL
+NLP
+Negotiation
+Network Administration
+Networking
+News Writing
+Next.js
+NodeJS
+ONNX
+OOP
+Object Detection
+Ollama
+OpenAI API
+OpenCV
+Operations Management
+Origami Studio
+PDF
+PEFT
+PHP
+PPC
+Pay Per Click
+Photoshop
+Pinecone
+Plagiarism Detection
+Playwriting
+Poetry
+Portfolio Management
+Power BI
+PowerPoint
+Premiere Pro
+Prezi
+Principle
+Pro Tools
+Product Management
+Project Management
+Prometheus
+Prompt Engineering
+Proofreading
+Proto.io
+Prototyping
+Public Relations
+Pure Data
+PySpark
+PyTorch
+PyTorch 2.0
+Python
+Python Scripting
+QA Testing
+QLab
+QLoRA
+QMix
+Qdrant
+Qtour
+Quality Assurance
+Quantity Surveying
+R
+RAG
+REST APIs
+RESTful APIs
+RLHF
+ROS
+ROS2
+Raspberry Pi
+React
+Reaper
+Reason
+Recruitment
+Reference Management
+Reporting
+Research
+RestructuredText
+Retrieval Augmented Generation
+Robotics
+SEM
+SEO
+SEO Optimization
+SEO Writing
+SLAM
+SMM
+SQL
+Sales
+Sass
+Scikit-Learn
+Screenwriting
+Scrum
+Search Engine Optimization
+Semantic Kernel
+Semantic Search
+Sensor Fusion
+Shopify
+Sketch
+Snowflake
+Social Media
+Social Media Marketing
+Soil Mechanics
+SolidWorks
+Spring Boot
+Squarespace
+Statistics
+Stress Analysis
+Structural Engineering
+Studio One
+SuperCollider
+Supply Chain Management
+Surveying
+System Administration
+Tableau
+Tailwind CSS
+Talent Acquisition
+Taxation
+Technical Editing
+Technical Writing
+TensorFlow
+TensorRT
+Terraform
+Thermodynamics
+TinyML
+TorchScript
+Transformers
+Triton
+TypeScript
+UI Design
+UI Development
+UI/UX
+UX Design
+Valuation
+Vector Databases
+Vector Illustration
+Vector Search
+Vue
+Wandb
+WavePad
+Weaviate
+Webflow
+Weights & Biases
+Wireframing
+Wix
+WooCommerce
+Word
+WordPress
+Writing
+YOLO
+Zeplin
+Zero Trust
+Zeroheight
+dbt
+jQuery
+microcontrollers
+vLLM

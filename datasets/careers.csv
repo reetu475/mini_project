@@ -1,16 +1,37 @@
 Career,Skills
-AI Engineer,"Python Machine Learning Deep Learning NLP TensorFlow"
-Data Scientist,"Python SQL Statistics Machine Learning"
-Data Analyst,"Python SQL Excel Power BI"
-ML Engineer,"Python Machine Learning TensorFlow"
-Software Engineer,"Python Java DSA DBMS OOP"
-Financial Analyst,"Finance Accounting Financial Modeling Valuation Excel"
-Digital Marketer,"SEO Copywriting Social Media Google Ads Branding Content Strategy Marketing"
-UI/UX Designer,"Figma UI/UX Design Wireframing Prototyping Photoshop Illustrator Canva"
-HR Specialist,"Recruitment HR Management Talent Acquisition Communication"
-Mechanical Engineer,"CAD SolidWorks AutoCAD Thermodynamics MATLAB Manufacturing Engineering"
-Content Writer,"Writing Editing Blogging Research Communication Copywriting"
-Embedded Systems Engineer,"microcontrollers embedded systems VLSI circuit design signal processing Arduino Raspberry Pi ECE"
-Product Manager,"Product Management Agile Scrum Product Strategy Business Analysis Product Lifecycle"
-Business Consultant,"Business Analysis Operations Management Strategy Finance Consulting Communication Marketing"
-Civil Engineer,"Civil Engineer Civil Engineering AutoCAD CAD Structural Engineering Concrete Construction Management Soil Mechanics Surveying Estimation Project Management"
+Generative AI Engineer,Python PyTorch Transformers LLMs LangChain LlamaIndex RAG Vector Databases ChromaDB Pinecone Fine-Tuning LoRA Prompt Engineering OpenAI API Deep Learning
+LLM Engineer,Python Hugging Face Transformers Quantization vLLM Ollama DeepSpeed LoRA QLoRA RAG Embeddings RLHF Model Evaluation
+MLOps Engineer,Python Docker Kubernetes Kubeflow MLflow CI/CD Git AWS GCP Triton Model Monitoring DVC Feature Store Linux
+AI Solutions Architect,Python Cloud AWS Bedrock Azure OpenAI GCP Vertex AI Enterprise AI System Design RAG Microservices Solution Architecture
+AI Safety & Ethics Specialist,Python AI Governance Model Alignment Bias Mitigation Red Teaming RLHF Safety Auditing LLM Evaluation AI Ethics
+Autonomous Systems Engineer,Python C++ ROS ROS2 Computer Vision SLAM Sensor Fusion LiDAR Kalman Filter Robotics Control Systems
+Full Stack AI Engineer,Python TypeScript React Next.js FastAPI LangChain Vector Databases Tailwind CSS REST APIs OpenAI API Web Development
+Cloud DevSecOps Engineer,Python Linux AWS Azure Docker Kubernetes Terraform CI/CD Zero Trust Cloud Security IAM DevSecOps
+Data Platform Engineer,Python SQL Snowflake Databricks dbt Apache Spark PySpark Airflow Apache Kafka ETL Data Pipelines Big Data
+Cyber Threat Intelligence Analyst,Python Cybersecurity SIEM Threat Hunting MITRE ATTACK SOC Incident Response Network Security Threat Intelligence
+Quantum Computing Specialist,Python Qiskit Quantum Computing Quantum Algorithms Linear Algebra Quantum Information Quantum Mechanics Physics
+Computer Vision Engineer,Python C++ OpenCV PyTorch TensorFlow CNNs YOLO Image Processing Object Detection Segmentation Computer Vision
+Edge AI & Embedded Engineer,C C++ Embedded Systems microcontrollers TinyML Edge Impulse TensorRT ARM Cortex IoT Arduino Hardware
+NLP Engineer,Python NLP NLTK Spacy Transformers BERT Hugging Face Text Mining Information Retrieval Embeddings Linguistics
+Prompt Engineer,Prompt Engineering LLMs Few-Shot Prompting Chain-of-Thought System Prompts Evaluation Figma AI UX AI Interaction
+AI Product Manager,Product Management Generative AI Agile Scrum Product Strategy Market Research User Stories AI Metrics Product Lifecycle Roadmapping
+Machine Learning Engineer,Python Machine Learning Deep Learning PyTorch TensorFlow Scikit-Learn Feature Engineering Mathematics Algorithms
+Data Scientist,Python SQL Statistics Machine Learning Data Analysis Pandas NumPy Experimentation A/B Testing Scikit-Learn Data Modeling
+Data Analyst,Python SQL Excel Power BI Tableau Business Intelligence Data Cleaning Dashboarding Reporting Data Visualization
+Software Engineer,Python Java DSA DBMS OOP System Design Git REST APIs Clean Code Software Architecture
+Frontend Engineer,JavaScript TypeScript React Next.js HTML CSS Tailwind CSS Redux Web Performance UI Engineering
+Backend Engineer,Python Java Go NodeJS PostgreSQL MongoDB Redis Microservices Docker REST APIs System Architecture
+Cloud Solutions Architect,AWS Azure GCP Cloud Architecture Networking Security High Availability Cost Optimization Terraform Infrastructure
+Cybersecurity Specialist,Cyber Security Networking Linux Firewalls Penetration Testing Vulnerability Assessment Cryptography SOC Incident Response
+DevOps Engineer,Linux Docker Kubernetes CI/CD Terraform Ansible AWS Bash Monitoring Prometheus Grafana Cloud
+UI/UX Designer,Figma UI/UX Design Wireframing Prototyping Design Systems User Research Usability Testing Photoshop Illustrator Canva
+Mobile App Developer,Flutter React Native Swift Kotlin iOS Android Mobile UI State Management Firebase REST APIs
+Blockchain Developer,Solidity Smart Contracts Ethereum Web3 Rust Cryptography Blockchain Hardhat DeFi Decentralized Systems
+Financial Analyst,Finance Accounting Financial Modeling Valuation Excel DCF Corporate Finance Financial Reporting Investment Analysis
+Digital Marketing Specialist,SEO Copywriting Social Media Google Ads Content Strategy Email Marketing Google Analytics Branding Marketing Campaigns
+Product Manager,Product Strategy Agile Scrum Roadmap Planning User Stories Market Analysis Product Lifecycle Business Analysis User Research
+Business Consultant,Business Analysis Strategy Operations Management Consulting Financial Modeling Problem Solving Communication Process Improvement
+Mechanical Engineer,CAD SolidWorks AutoCAD Thermodynamics FEA CFD Manufacturing MATLAB Engineering Design Finite Element Analysis
+Civil Engineer,Civil Engineer Civil Engineering AutoCAD CAD Structural Engineering Concrete Design Construction Management Surveying Estimation Quantity Surveying
+HR Specialist,Recruitment Talent Acquisition HR Management Labor Law Employee Relations Onboarding HR Analytics Performance Management
+Content Strategist,Writing Editing Blogging Research Communication Copywriting Content Marketing Storytelling Editorial Planning

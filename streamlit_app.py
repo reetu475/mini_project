@@ -162,6 +162,42 @@ st.markdown("""
         padding: 0.75rem;
         margin-bottom: 0.5rem;
     }
+    .career-suggestion-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .career-suggestion-card:hover {
+        border-color: rgba(139, 92, 246, 0.5);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .badge-primary-fit {
+        background: rgba(139, 92, 246, 0.2);
+        color: #a78bfa;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .badge-pivot-fit {
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+    .badge-difficulty {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -194,6 +230,7 @@ def get_config(key, default=None):
 from skill_extractor import extract_skills, extract_skills_with_groq, SPACY_AVAILABLE
 from career_recommender import (
     recommend_career, recommend_career_with_groq,
+    recommend_top_careers, recommend_top_careers_with_groq,
     calculate_compatibility_score, calculate_compatibility_score_with_groq
 )
 from education_advisor import EducationAdvisor
@@ -327,6 +364,60 @@ def format_roadmap_badge(source_text):
         return "Curated Industry Roadmap"
     return source_text
 
+def render_career_suggestions(suggestions, active_career=None):
+    if not suggestions:
+        return
+        
+    st.markdown("---")
+    st.subheader("🎯 AI Career Suggestions & Emerging Tech Pathways")
+    st.write("Based on your technical background and current AI market trends, here are your top recommended career pathways and high-potential transitions:")
+    
+    display_items = suggestions[:3] if len(suggestions) >= 3 else suggestions
+    cols = st.columns(len(display_items))
+    for i, s in enumerate(display_items):
+        with cols[i]:
+            c_name = s.get('career', 'Tech Specialist')
+            is_active = bool(active_career and c_name.lower() == str(active_career).lower())
+            border_style = "border: 1.5px solid #8b5cf6;" if is_active else "border: 1px solid rgba(255, 255, 255, 0.08);"
+            bg_style = "background: rgba(139, 92, 246, 0.06);" if is_active else "background: rgba(255, 255, 255, 0.02);"
+            
+            level = s.get('match_level', 'High Potential Fit')
+            diff = s.get('transition_difficulty', 'Direct Match')
+            score = float(s.get('score', 0.0))
+            
+            badge_class = "badge-primary-fit" if ("primary" in level.lower() or is_active) else "badge-pivot-fit"
+            
+            matched_badges = "".join(f'<span class="badge-matched">✓ {m}</span>' for m in s.get('matched_skills', [])[:4])
+            missing_badges = "".join(f'<span class="badge-missing">? {m}</span>' for m in s.get('missing_skills', [])[:4])
+            
+            active_badge = '<span style="background:#8b5cf6;color:white;font-size:0.7rem;padding:2px 6px;border-radius:4px;font-weight:bold;margin-left:6px;">ACTIVE</span>' if is_active else ''
+            
+            st.markdown(f"""
+            <div class="career-suggestion-card" style="{border_style} {bg_style}">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                    <div>
+                        <span class="{badge_class}">{level}</span>{active_badge}
+                    </div>
+                    <div style="font-size:1.15rem; font-weight:bold; color:#8b5cf6;">{score}%</div>
+                </div>
+                <h4 style="margin: 0.4rem 0 0.2rem 0; color:#f8fafc;">{c_name}</h4>
+                <div style="margin-bottom:0.6rem;">
+                    <span class="badge-difficulty">⚡ {diff}</span>
+                </div>
+                <div style="font-size:0.85rem; color:#cbd5e1; margin-bottom:0.75rem; line-height:1.4;">
+                    {s.get('rationale', f'Strong technical skill overlap with {c_name} role requirements.')}
+                </div>
+                <div style="margin-bottom:0.5rem;">
+                    <div style="font-size:0.75rem; color:#94a3b8; font-weight:bold; margin-bottom:0.25rem;">Matched Skills:</div>
+                    {matched_badges if matched_badges else '<span style="color:#64748b;font-size:0.75rem;">Foundational skills</span>'}
+                </div>
+                <div>
+                    <div style="font-size:0.75rem; color:#94a3b8; font-weight:bold; margin-bottom:0.25rem;">Key Growth Areas:</div>
+                    {missing_badges if missing_badges else '<span style="color:#10b981;font-size:0.75rem;">All core skills present!</span>'}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
 # Profile rendering results loader
 def get_profile_results_context(row):
     if not row:
@@ -372,6 +463,16 @@ def get_profile_results_context(row):
         custom_api_key=active_api_key
     )
     
+    # Multi-Career Suggestions and Alternative Pathways
+    career_suggestions = []
+    if active_api_key:
+        try:
+            career_suggestions = recommend_top_careers_with_groq(user_skills, interests, active_api_key, top_n=4)
+        except Exception:
+            career_suggestions = recommend_top_careers(user_skills, top_n=4)
+    else:
+        career_suggestions = recommend_top_careers(user_skills, top_n=4)
+
     context = {
         'id': row['id'],
         'name': name,
@@ -384,6 +485,7 @@ def get_profile_results_context(row):
         'certifications': certifications,
         'roadmap_steps': roadmap_steps,
         'roadmap_source': roadmap_source,
+        'career_suggestions': career_suggestions,
         'interests': interests
     }
     st.session_state[cache_key] = context
@@ -837,6 +939,9 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
             
+            # AI Career Suggestions & Emerging Tech Pathways
+            render_career_suggestions(manual_results.get('career_suggestions', []), active_career=manual_results['career'])
+
             # Profile Details & Form Skills description text side-by-side
             st.markdown("---")
             st.subheader("📋 Profile Analysis Summary")
@@ -1042,6 +1147,9 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
             
+            # AI Career Suggestions & Emerging Tech Pathways
+            render_career_suggestions(resume_results.get('career_suggestions', []), active_career=resume_results['career'])
+
             # Profile Details & Extracted Resume Text side-by-side
             st.markdown("---")
             st.subheader("📋 Resume Analysis Summary")

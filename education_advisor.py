@@ -67,7 +67,7 @@ class EducationAdvisor:
                     # Initialize ChromaDB persistent client
                     self.client = chromadb.PersistentClient(path=self.db_path)
                     
-                self.collection = self.client.get_or_create_collection("education_resources_v5")
+                self.collection = self.client.get_or_create_collection("education_resources_v6")
                 self.seed_chroma()
             except Exception as e:
                 print(f"Error initializing ChromaDB: {e}. Falling back to TF-IDF vector search.")
