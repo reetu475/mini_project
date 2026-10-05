@@ -150,8 +150,8 @@ def generate_roadmap(career, user_skills, user_interests, custom_api_key=None):
     Checks for Groq API keys and queries the Groq API. 
     If not available, falls back to high-quality local roadmap databases.
     """
-    # Check for API Key: custom key overrides environment variables
-    api_key = custom_api_key or os.getenv("GROQ_API_KEY")
+    from resume_parser import DEFAULT_GROQ_KEY
+    api_key = custom_api_key or os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
     
     if not api_key:
         print("No Groq API Key found. Using local database fallback.")

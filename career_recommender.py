@@ -91,10 +91,12 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
     """Uses Groq to match skills and interests to a career path dynamically."""
     try:
         from groq import Groq
-        from resume_parser import get_groq_chat_model
+        from resume_parser import get_groq_chat_model, DEFAULT_GROQ_KEY
         import json
         import re
         
+        if not api_key:
+            api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
         client = Groq(api_key=api_key)
         model_name = get_groq_chat_model(client)
         messages = [
@@ -204,10 +206,12 @@ def calculate_compatibility_score_with_groq(user_skills, target_career, api_key)
     """Uses Groq to calculate the compatibility score between user skills and a specific career."""
     try:
         from groq import Groq
-        from resume_parser import get_groq_chat_model
+        from resume_parser import get_groq_chat_model, DEFAULT_GROQ_KEY
         import json
         import re
         
+        if not api_key:
+            api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
         client = Groq(api_key=api_key)
         model_name = get_groq_chat_model(client)
         messages = [

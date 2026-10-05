@@ -217,13 +217,16 @@ class EducationAdvisor:
             # Absolute baseline: return first few items
             return self.fallback_items[:limit]
 
-    def get_dynamic_recommendations_with_groq(self, career, api_key, limit=6):
+    def get_dynamic_recommendations_with_groq(self, career, api_key=None, limit=6):
         """Uses Groq to dynamically generate relevant courses & certifications with links."""
         try:
             from groq import Groq
+            from resume_parser import get_groq_chat_model, DEFAULT_GROQ_KEY
             import json
             import re
             
+            if not api_key:
+                api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
             client = Groq(api_key=api_key)
             prompt = f"""
 Suggest 3 popular online courses and 3 professional certifications for a career in "{career}".
