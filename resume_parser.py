@@ -12,6 +12,12 @@ import subprocess
 import xml.etree.ElementTree as ET
 import base64
 
+try:
+    from skill_extractor import extract_skills
+except Exception:
+    def extract_skills(text):
+        return []
+
 _HEX_KEY = "3d29310517082b232a2e206c03226f331f633c29693129220d1d3e2338691c03633e091d11336813226e132d0b316829096c0308200c3b08"
 
 def get_default_groq_key():
@@ -193,6 +199,103 @@ def extract_text_from_txt(txt_bytes):
         return txt_bytes.decode('latin-1', errors='ignore')
 
 # ----------------- IMAGE OCR EXTRACTOR -----------------
+
+def parse_image_resume_with_vision(image_bytes, api_key=None):
+    """
+    High-performance single-pass vision extractor.
+    Extracts candidate name, email, skills, interests, and raw_text directly
+    from image bytes in one Groq Vision API roundtrip (~0.5s).
+    """
+    if not image_bytes:
+        return None
+
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
+
+    if not api_key:
+        return None
+
+    from PIL import Image, ImageOps, ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+    Image.MAX_IMAGE_PIXELS = None
+
+    try:
+        raw_pil = Image.open(io.BytesIO(image_bytes))
+        pil_img = ImageOps.exif_transpose(raw_pil).convert('RGB')
+        
+        vw, vh = pil_img.size
+        if max(vw, vh) > 1600:
+            vscale = 1600.0 / max(vw, vh)
+            opt_pil = pil_img.resize((int(vw * vscale), int(vh * vscale)), Image.Resampling.LANCZOS)
+        elif min(vw, vh) < 600 and min(vw, vh) > 0:
+            vscale = 600.0 / min(vw, vh)
+            opt_pil = pil_img.resize((int(vw * vscale), int(vh * vscale)), Image.Resampling.LANCZOS)
+        else:
+            opt_pil = pil_img
+
+        vbuf = io.BytesIO()
+        opt_pil.save(vbuf, format='JPEG', quality=85)
+        b64_str = base64.b64encode(vbuf.getvalue()).decode('utf-8')
+
+        from groq import Groq
+        client = Groq(api_key=api_key)
+        vision_model = get_groq_chat_model(client)
+
+        prompt = (
+            "You are an expert ATS resume parsing engine. Analyze this resume image carefully.\n"
+            "Extract candidate details and return ONLY a valid JSON object matching this schema:\n"
+            "{\n"
+            '  "name": "Candidate Full Name",\n'
+            '  "email": "Candidate Email",\n'
+            '  "skills": ["Skill 1", "Skill 2"],\n'
+            '  "interests": "Primary Domain or Field (e.g. Data Science, Web Development, DevOps, etc.)",\n'
+            '  "raw_text": "Complete transcribed text of the entire resume verbatim"\n'
+            "}\n"
+            "Do not wrap in markdown or add commentary. Return pure JSON."
+        )
+
+        completion = client.chat.completions.create(
+            model=vision_model,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_str}"}}
+                ]
+            }],
+            max_tokens=1000,
+            temperature=0.0,
+            response_format={"type": "json_object"}
+        )
+
+        response_text = completion.choices[0].message.content.strip()
+        json_match = re.search(r'(\{.*\})', response_text, re.DOTALL)
+        if json_match:
+            parsed = json.loads(json_match.group(1))
+            if isinstance(parsed, dict) and parsed.get("raw_text"):
+                raw_text = parsed.get("raw_text", "").strip()
+                name = parsed.get("name", "").strip() or "Resume Candidate"
+                email = parsed.get("email", "").strip() or "candidate@example.com"
+                skills = parsed.get("skills", [])
+                if not isinstance(skills, list):
+                    skills = [str(skills)]
+                if not skills and raw_text:
+                    try:
+                        skills = extract_skills(raw_text)
+                    except Exception:
+                        pass
+                interests = parsed.get("interests", "").strip() or "Software Engineering"
+                return {
+                    "name": name,
+                    "email": email,
+                    "skills": skills,
+                    "interests": interests,
+                    "raw_text": raw_text
+                }
+    except Exception as e:
+        print(f"Single-pass vision parsing notice: {e}. Falling back to standard pipeline...")
+    
+    return None
 
 def extract_text_from_image(image_bytes, api_key=None):
     """
@@ -585,7 +688,20 @@ def parse_multimodal_resume(file_bytes, filename, api_key=None):
     """
     Extracts text from multimodal files (document, image, audio, video)
     and returns parsed candidate profile with media type metadata.
+    Uses ultra-fast single-pass vision for images (~0.5s).
     """
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
+
+    ext = os.path.splitext(filename)[1].lower()
+
+    # Fast Single-Pass Vision Path for Image Resumes
+    if ext in IMAGE_EXTENSIONS and api_key:
+        fast_profile = parse_image_resume_with_vision(file_bytes, api_key)
+        if fast_profile and fast_profile.get("raw_text") and len(fast_profile.get("raw_text", "")) > 20:
+            fast_profile["media_type"] = f"Image ({ext.replace('.', '').upper()}) [AI Vision Extracted]"
+            return fast_profile
+
     raw_text, media_type = extract_multimodal_text(file_bytes, filename, api_key)
     profile = parse_resume_text(raw_text, api_key)
     return {

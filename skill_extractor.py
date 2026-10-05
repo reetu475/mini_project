@@ -1,18 +1,21 @@
 # skill_extractor.py
 
 import re
+import importlib.util
 import pandas as pd
 
-# Try to load spaCy NLP package and the English pipeline model
-try:
-    import spacy
-    nlp = spacy.load("en_core_web_sm")
-    SPACY_AVAILABLE = True
-    print("spaCy NLP engine (en_core_web_sm) loaded successfully.")
-except Exception as e:
-    print(f"Warning: Could not load spaCy or en_core_web_sm ({e}). Falling back to pure regex.")
-    nlp = None
-    SPACY_AVAILABLE = False
+# Check if en_core_web_sm model is installed before loading heavy spaCy runtime
+SPACY_AVAILABLE = False
+nlp = None
+if importlib.util.find_spec("en_core_web_sm") is not None:
+    try:
+        import spacy
+        nlp = spacy.load("en_core_web_sm")
+        SPACY_AVAILABLE = True
+        print("spaCy NLP engine (en_core_web_sm) loaded successfully.")
+    except Exception as e:
+        nlp = None
+        SPACY_AVAILABLE = False
 
 # Hardcoded fallback list in case CSV fails to load
 DEFAULT_SKILLS = [

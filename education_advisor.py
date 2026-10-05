@@ -29,6 +29,7 @@ class EducationAdvisor:
         self.courses_df = None
         self.certs_df = None
         self.collection = None
+        self.user_collection = None
         self.fallback_vectorizer = None
         self.fallback_matrix = None
         self.fallback_items = []
@@ -263,12 +264,30 @@ Return ONLY a JSON list of objects, each with keys "title", "provider", "type", 
             print(f"Error in Groq educational recommendation: {e}. Falling back to ChromaDB.")
             
         return self.get_recommendations(career, limit)
-    def save_user_profile(self, profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type):
-        """Save user profile to a collection in ChromaDB under user_profiles_v1."""
+    def save_user_profile(self, profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type, background=True):
+        """
+        Save user profile to a collection in ChromaDB under user_profiles_v1.
+        By default, runs non-blocking in a background daemon thread for zero latency.
+        """
         if not self.use_chroma:
             return False
+
+        if background:
+            import threading
+            t = threading.Thread(
+                target=self._save_user_profile_sync,
+                args=(profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type),
+                daemon=True
+            )
+            t.start()
+            return True
+        else:
+            return self._save_user_profile_sync(profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type)
+
+    def _save_user_profile_sync(self, profile_id, name, email, skills_text, interests, recommended_career, match_score, submission_type):
         try:
-            user_collection = self.client.get_or_create_collection("user_profiles_v1")
+            if self.user_collection is None:
+                self.user_collection = self.client.get_or_create_collection("user_profiles_v1")
             
             # Format text representation for semantic embeddings
             doc_text = f"Name: {name}\nEmail: {email}\nSkills text: {skills_text}\nInterests: {interests}\nRecommended Career: {recommended_career}\nMatch Score: {match_score}%\nSubmission Type: {submission_type}"
@@ -284,7 +303,7 @@ Return ONLY a JSON list of objects, each with keys "title", "provider", "type", 
                 "submission_type": str(submission_type)
             }
             
-            user_collection.add(
+            self.user_collection.add(
                 documents=[doc_text],
                 metadatas=[metadata],
                 ids=[f"user_profile_{profile_id}"]
@@ -300,8 +319,9 @@ Return ONLY a JSON list of objects, each with keys "title", "provider", "type", 
         if not self.use_chroma:
             return False
         try:
-            user_collection = self.client.get_or_create_collection("user_profiles_v1")
-            user_collection.delete(ids=[f"user_profile_{profile_id}"])
+            if self.user_collection is None:
+                self.user_collection = self.client.get_or_create_collection("user_profiles_v1")
+            self.user_collection.delete(ids=[f"user_profile_{profile_id}"])
             print(f"ChromaDB: Successfully deleted profile ID {profile_id}")
             return True
         except Exception as e:
