@@ -230,9 +230,12 @@ Suggest 3 popular online courses and 3 professional certifications for a career 
 For each, provide: Title, Provider, Type ("Course" or "Certification"), Skills (comma-separated list of target skills), Description, and Link (a realistic URL to Coursera, Udemy, or vendor registration).
 Return ONLY a JSON list of objects, each with keys "title", "provider", "type", "skills", "description", and "link". Do not include markdown formatting or explanation.
 """
+            from resume_parser import get_groq_chat_model
+            model_name = get_groq_chat_model(client)
+            
             completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
-                model="llama-3.1-8b-instant",
+                model=model_name,
                 temperature=0.3,
                 max_tokens=1000
             )

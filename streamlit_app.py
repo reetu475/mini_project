@@ -308,6 +308,11 @@ def get_profile_results_context(row):
     if not row:
         return None
         
+    pid = row['id']
+    cache_key = f"profile_context_{pid}"
+    if cache_key in st.session_state:
+        return st.session_state[cache_key]
+        
     name = row['name']
     email = row['email']
     skills_text = row['skills_text']
@@ -321,8 +326,13 @@ def get_profile_results_context(row):
         user_skills = [s.strip() for s in row['extracted_skills'].split(',') if s.strip()]
         
     # Semantic recommendations
+    recommendations = []
     if active_api_key:
-        recommendations = advisor.get_dynamic_recommendations_with_groq(recommended_career, active_api_key, limit=6)
+        try:
+            recommendations = advisor.get_dynamic_recommendations_with_groq(recommended_career, active_api_key, limit=6)
+        except Exception:
+            course_query = f"{recommended_career} {interests}"
+            recommendations = advisor.get_recommendations(course_query, limit=6)
     else:
         course_query = f"{recommended_career} {interests}"
         recommendations = advisor.get_recommendations(course_query, limit=6)
@@ -338,7 +348,7 @@ def get_profile_results_context(row):
         custom_api_key=active_api_key
     )
     
-    return {
+    context = {
         'id': row['id'],
         'name': name,
         'email': email,
@@ -352,6 +362,8 @@ def get_profile_results_context(row):
         'roadmap_source': roadmap_source,
         'interests': interests
     }
+    st.session_state[cache_key] = context
+    return context
 
 # ----------------- SIDEBAR: SAVED HISTORY -----------------
 with st.sidebar:
@@ -484,9 +496,12 @@ if st.session_state["active_profile_id"] is None:
                         st.error("Please write down your skills.")
                     else:
                         with st.spinner("Processing manual alignment recommendations..."):
-                            # Extract Skills
                             if active_api_key:
-                                user_skills = extract_skills_with_groq(m_skills, active_api_key)
+                                try:
+                                    user_skills = extract_skills_with_groq(m_skills, active_api_key)
+                                except Exception as e:
+                                    st.warning("⚠️ Groq API Error/Quota Completed during skill extraction. Falling back to offline matcher.")
+                                    user_skills = extract_skills(m_skills)
                             else:
                                 user_skills = extract_skills(m_skills)
                                 
@@ -495,12 +510,18 @@ if st.session_state["active_profile_id"] is None:
                             if target_c:
                                 rec_career = target_c
                                 if active_api_key:
-                                    m_score = calculate_compatibility_score_with_groq(user_skills, target_c, active_api_key)
+                                    try:
+                                        m_score = calculate_compatibility_score_with_groq(user_skills, target_c, active_api_key)
+                                    except Exception:
+                                        _, m_score = calculate_compatibility_score(user_skills, target_c)
                                 else:
                                     _, m_score = calculate_compatibility_score(user_skills, target_c)
                             else:
                                 if active_api_key:
-                                    rec_career, m_score = recommend_career_with_groq(user_skills, m_interests, active_api_key)
+                                    try:
+                                        rec_career, m_score = recommend_career_with_groq(user_skills, m_interests, active_api_key)
+                                    except Exception:
+                                        rec_career, m_score = recommend_career(user_skills)
                                 else:
                                     rec_career, m_score = recommend_career(user_skills)
                                     
@@ -539,10 +560,20 @@ if st.session_state["active_profile_id"] is None:
     # ----------------- RIGHT CARD: UPLOAD RESUME -----------------
     with col_right:
         with st.container(border=True):
-            st.header("📄 Upload Resume Form")
-            st.markdown("Upload your PDF, DOCX, or TXT resume for automatic parsing.")
+            st.header("📄 Upload Multimodal Resume")
+            st.markdown("Upload your resume in any format: **Document** (PDF, DOCX, TXT), **Image** (PNG, JPG), **Audio** (MP3, WAV), or **Video** (MP4, MOV).")
             
-            uploaded_file = st.file_uploader("Select Resume Document", type=["pdf", "docx", "txt"])
+            MULTIMODAL_TYPES = [
+                "pdf", "docx", "doc", "txt", 
+                "png", "jpg", "jpeg", "webp", 
+                "mp3", "wav", "m4a", "ogg", "flac", 
+                "mp4", "mov", "avi", "mkv", "webm"
+            ]
+            uploaded_file = st.file_uploader(
+                "Select Resume (Doc / Image / Audio / Video)", 
+                type=MULTIMODAL_TYPES,
+                help="Supports Documents (PDF, DOCX), Images (PNG, JPG), Audio (MP3, WAV), and Video (MP4, MOV)."
+            )
             target_career = st.text_input("Target / Aiming Career (Optional)", placeholder="e.g. Data Scientist, DevOps Engineer")
             
             col_direct, col_autofill = st.columns(2)
@@ -553,24 +584,19 @@ if st.session_state["active_profile_id"] is None:
                 autofill_btn = st.button("Extract & Edit Form", use_container_width=True)
                 
             if (direct_btn or autofill_btn) and uploaded_file is not None:
-                with st.spinner("Extracting resume contents..."):
+                with st.spinner("Extracting resume contents from uploaded media..."):
                     file_bytes = uploaded_file.read()
-                    ext = os.path.splitext(uploaded_file.name)[1].lower()
                     
-                    # File parsing based on format
-                    from resume_parser import extract_text_from_pdf, extract_text_from_docx, extract_text_from_txt, parse_resume_text
-                    if ext == '.pdf':
-                        text = extract_text_from_pdf(file_bytes)
-                    elif ext == '.docx':
-                        text = extract_text_from_docx(file_bytes)
+                    from resume_parser import parse_multimodal_resume
+                    parsed_profile = parse_multimodal_resume(file_bytes, uploaded_file.name, api_key=active_api_key)
+                    
+                    text = parsed_profile.get("raw_text", "").strip()
+                    media_type = parsed_profile.get("media_type", "Document")
+                    
+                    if not text:
+                        st.error(f"Could not extract content from the {media_type} file. Please verify the file has legible text or clear audio.")
                     else:
-                        text = extract_text_from_txt(file_bytes)
-                        
-                    if not text or not text.strip():
-                        st.error("Could not extract text from the file.")
-                    else:
-                        # Parse details
-                        parsed_profile = parse_resume_text(text, api_key=active_api_key)
+                        st.success(f"Processed: **{media_type}**")
                         name = parsed_profile.get("name", "Resume Candidate").strip()
                         email = parsed_profile.get("email", "resume_applicant@example.com").strip()
                         user_skills = parsed_profile.get("skills", [])
@@ -580,15 +606,24 @@ if st.session_state["active_profile_id"] is None:
                             interests = target_career if target_career else "Software Engineering"
                             
                         # Evaluate matching
+                        recommended_career = ""
+                        match_score = 0.0
+                        
                         if target_career.strip():
                             recommended_career = target_career.strip()
                             if active_api_key:
-                                match_score = calculate_compatibility_score_with_groq(user_skills, target_career.strip(), active_api_key)
+                                try:
+                                    match_score = calculate_compatibility_score_with_groq(user_skills, target_career.strip(), active_api_key)
+                                except Exception:
+                                    _, match_score = calculate_compatibility_score(user_skills, target_career.strip())
                             else:
                                 _, match_score = calculate_compatibility_score(user_skills, target_career.strip())
                         else:
                             if active_api_key:
-                                recommended_career, match_score = recommend_career_with_groq(user_skills, interests, active_api_key)
+                                try:
+                                    recommended_career, match_score = recommend_career_with_groq(user_skills, interests, active_api_key)
+                                except Exception:
+                                    recommended_career, match_score = recommend_career(user_skills)
                             else:
                                 recommended_career, match_score = recommend_career(user_skills)
                                 
@@ -1005,7 +1040,7 @@ else:
                     
             with col_p_text:
                 with st.container(border=True):
-                    st.markdown("#### Parsed Document Raw Text")
+                    st.markdown("#### Parsed Content / Media Transcript")
                     st.markdown(f"""
                     <div style="max-height: 220px; overflow-y: auto; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word;">{resume_results['input_skills']}</div>
                     <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 0.5rem; font-style: italic;">

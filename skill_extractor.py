@@ -89,9 +89,12 @@ You are a skill extraction engine. Extract a list of professional skills, techno
 Return ONLY a JSON list of strings. Do not include any explanation or markdown formatting. 
 Example response: ["Embedded Systems", "MATLAB", "Circuit Design"]
 """
+        from resume_parser import get_groq_chat_model
+        model_name = get_groq_chat_model(client)
+        
         completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
+            model=model_name,
             temperature=0.0,
             max_tokens=200
         )

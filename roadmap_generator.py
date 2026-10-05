@@ -187,8 +187,9 @@ Guidelines:
 4. Do not include introductory or concluding conversational text. Start directly with "### Step 1:".
 """
         
-        # Call Groq API
-        # Using Llama 3 8B which is fast, reliable, and cheap/free depending on Groq tiers
+        from resume_parser import get_groq_chat_model
+        model_name = get_groq_chat_model(client)
+        
         completion = client.chat.completions.create(
             messages=[
                 {
@@ -196,13 +197,13 @@ Guidelines:
                     "content": prompt,
                 }
             ],
-            model="llama-3.1-8b-instant",
+            model=model_name,
             temperature=0.3,
             max_tokens=1000,
         )
         
         response_text = completion.choices[0].message.content
-        print("Groq API completed successfully.")
+        print(f"Groq API ({model_name}) completed successfully.")
         
         # Parse the output using our regex parser
         parsed_steps = parse_roadmap_with_regex(response_text)

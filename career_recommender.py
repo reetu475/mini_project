@@ -91,10 +91,12 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
     """Uses Groq to match skills and interests to a career path dynamically."""
     try:
         from groq import Groq
+        from resume_parser import get_groq_chat_model
         import json
         import re
         
         client = Groq(api_key=api_key)
+        model_name = get_groq_chat_model(client)
         messages = [
             {
                 "role": "system",
@@ -117,7 +119,7 @@ def recommend_career_with_groq(user_skills, user_interests, api_key):
         ]
         completion = client.chat.completions.create(
             messages=messages,
-            model="llama-3.1-8b-instant",
+            model=model_name,
             temperature=0.2,
             response_format={"type": "json_object"},
             max_tokens=200
@@ -202,10 +204,12 @@ def calculate_compatibility_score_with_groq(user_skills, target_career, api_key)
     """Uses Groq to calculate the compatibility score between user skills and a specific career."""
     try:
         from groq import Groq
+        from resume_parser import get_groq_chat_model
         import json
         import re
         
         client = Groq(api_key=api_key)
+        model_name = get_groq_chat_model(client)
         messages = [
             {
                 "role": "system",
@@ -226,7 +230,7 @@ def calculate_compatibility_score_with_groq(user_skills, target_career, api_key)
         ]
         completion = client.chat.completions.create(
             messages=messages,
-            model="llama-3.1-8b-instant",
+            model=model_name,
             temperature=0.0,
             response_format={"type": "json_object"},
             max_tokens=100
