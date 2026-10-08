@@ -13,3 +13,4 @@ imageio-ffmpeg
 Pillow
 rapidocr_onnxruntime
 opencv-python-headless
+requests

@@ -710,32 +710,45 @@ if st.session_state["active_profile_id"] is None:
     # ----------------- RIGHT CARD: UPLOAD RESUME -----------------
     with col_right:
         with st.container(border=True):
-            st.header("📄 Upload Multimodal Resume")
-            st.markdown("Upload your resume in any format: **Document** (PDF, DOCX, TXT), **Image** (PNG, JPG), **Audio** (MP3, WAV), or **Video** (MP4, MOV).")
+            st.header("📄 Ingest Multimodal Profile")
+            st.markdown("Provide your resume or portfolio via **File Upload** (PDF, DOCX, Images, AV) or **Web URL** (GitHub, Portfolio, Hosted Resume).")
             
-            MULTIMODAL_TYPES = [
-                "pdf", "docx", "doc", "txt", 
-                "png", "jpg", "jpeg", "webp", 
-                "mp3", "wav", "m4a", "ogg", "flac", 
-                "mp4", "mov", "avi", "mkv", "webm"
-            ]
-            uploaded_file = st.file_uploader(
-                "Select Resume (Doc / Image / Audio / Video)", 
-                type=MULTIMODAL_TYPES,
-                help="Supports Documents (PDF, DOCX), Images (PNG, JPG), Audio (MP3, WAV), and Video (MP4, MOV)."
-            )
+            tab_file, tab_url = st.tabs(["📁 Upload File (Doc / Image / AV)", "🌐 Web URL / Portfolio Link"])
             
-            if uploaded_file is not None:
-                ext_preview = os.path.splitext(uploaded_file.name)[1].lower()
-                if ext_preview in [".png", ".jpg", ".jpeg", ".webp"]:
-                    st.image(uploaded_file, caption=f"📸 Preview: {uploaded_file.name}", use_container_width=True)
-                    uploaded_file.seek(0)
-                elif ext_preview in [".mp3", ".wav", ".m4a", ".ogg"]:
-                    st.audio(uploaded_file)
-                    uploaded_file.seek(0)
-                elif ext_preview in [".mp4", ".mov", ".webm"]:
-                    st.video(uploaded_file)
-                    uploaded_file.seek(0)
+            with tab_file:
+                MULTIMODAL_TYPES = [
+                    "pdf", "docx", "doc", "txt", 
+                    "png", "jpg", "jpeg", "webp", 
+                    "mp3", "wav", "m4a", "ogg", "flac", 
+                    "mp4", "mov", "avi", "mkv", "webm"
+                ]
+                uploaded_file = st.file_uploader(
+                    "Select Resume (Doc / Image / Audio / Video)", 
+                    type=MULTIMODAL_TYPES,
+                    help="Supports Documents (PDF, DOCX), Images (PNG, JPG), Audio (MP3, WAV), and Video (MP4, MOV)."
+                )
+                
+                if uploaded_file is not None:
+                    ext_preview = os.path.splitext(uploaded_file.name)[1].lower()
+                    if ext_preview in [".png", ".jpg", ".jpeg", ".webp"]:
+                        st.image(uploaded_file, caption=f"📸 Preview: {uploaded_file.name}", use_container_width=True)
+                        uploaded_file.seek(0)
+                    elif ext_preview in [".mp3", ".wav", ".m4a", ".ogg"]:
+                        st.audio(uploaded_file)
+                        uploaded_file.seek(0)
+                    elif ext_preview in [".mp4", ".mov", ".webm"]:
+                        st.video(uploaded_file)
+                        uploaded_file.seek(0)
+
+            with tab_url:
+                st.caption("Paste a link to your online developer portfolio, GitHub profile, hosted resume PDF, or online CV.")
+                resume_url = st.text_input(
+                    "Profile / Resume Web URL", 
+                    placeholder="e.g. https://github.com/username or https://myportfolio.dev",
+                    help="Supports GitHub profiles, online developer portfolios, personal portfolio websites, and hosted PDF/DOCX resumes."
+                )
+                if resume_url and resume_url.strip():
+                    st.info(f"🔗 Targeted Profile URL: `{resume_url.strip()}`")
                     
             target_career = st.text_input("Target / Aiming Career (Optional)", placeholder="e.g. Data Scientist, DevOps Engineer")
             
@@ -746,115 +759,123 @@ if st.session_state["active_profile_id"] is None:
             with col_autofill:
                 autofill_btn = st.button("Extract & Edit Form", use_container_width=True)
                 
-            if (direct_btn or autofill_btn) and uploaded_file is not None:
-                with st.spinner("Extracting resume contents from uploaded media..."):
-                    file_bytes = uploaded_file.read()
-                    
-                    from resume_parser import parse_multimodal_resume
-                    parsed_profile = parse_multimodal_resume(file_bytes, uploaded_file.name, api_key=active_api_key)
-                    
-                    text = parsed_profile.get("raw_text", "").strip()
-                    media_type = parsed_profile.get("media_type", "Document")
-                    
-                    if not text:
-                        st.error(f"Could not extract content from the {media_type} file. Please verify the file has legible text or clear audio.")
-                    else:
-                        st.success(f"Processed: **{media_type}**")
-                        name = parsed_profile.get("name", "Resume Candidate").strip()
-                        email = parsed_profile.get("email", "resume_applicant@example.com").strip()
-                        user_skills = parsed_profile.get("skills", [])
+            has_input = (uploaded_file is not None) or (bool(resume_url.strip()) if 'resume_url' in locals() and resume_url else False)
+            
+            if (direct_btn or autofill_btn):
+                if not has_input:
+                    st.warning("⚠️ Please select a resume file to upload or enter a valid profile Web URL first.")
+                else:
+                    with st.spinner("Extracting candidate profile from multimodal source..."):
+                        from resume_parser import parse_multimodal_resume, parse_url_resume
                         
-                        interests = parsed_profile.get("interests", "").strip()
-                        if not interests:
-                            interests = target_career if target_career else "Software Engineering"
+                        if uploaded_file is not None:
+                            file_bytes = uploaded_file.read()
+                            parsed_profile = parse_multimodal_resume(file_bytes, uploaded_file.name, api_key=active_api_key)
+                        else:
+                            parsed_profile = parse_url_resume(resume_url.strip(), api_key=active_api_key)
+                        
+                        text = parsed_profile.get("raw_text", "").strip()
+                        media_type = parsed_profile.get("media_type", "Document")
+                        
+                        if not text:
+                            st.error(f"Could not extract content from the {media_type} source. Please verify that the link or file is accessible and contains readable text.")
+                        else:
+                            st.success(f"Processed: **{media_type}**")
+                            name = parsed_profile.get("name", "Resume Candidate").strip()
+                            email = parsed_profile.get("email", "resume_applicant@example.com").strip()
+                            user_skills = parsed_profile.get("skills", [])
                             
-                        # Evaluate matching
-                        recommended_career = ""
-                        match_score = 0.0
-                        
-                        if target_career.strip():
-                            recommended_career = target_career.strip()
-                            if active_api_key:
-                                try:
-                                    match_score = calculate_compatibility_score_with_groq(user_skills, target_career.strip(), active_api_key)
-                                except Exception:
+                            interests = parsed_profile.get("interests", "").strip()
+                            if not interests:
+                                interests = target_career if target_career else "Software Engineering"
+                                
+                            # Evaluate matching
+                            recommended_career = ""
+                            match_score = 0.0
+                            
+                            if target_career.strip():
+                                recommended_career = target_career.strip()
+                                if active_api_key:
+                                    try:
+                                        match_score = calculate_compatibility_score_with_groq(user_skills, target_career.strip(), active_api_key)
+                                    except Exception:
+                                        _, match_score = calculate_compatibility_score(user_skills, target_career.strip())
+                                else:
                                     _, match_score = calculate_compatibility_score(user_skills, target_career.strip())
                             else:
-                                _, match_score = calculate_compatibility_score(user_skills, target_career.strip())
-                        else:
-                            if active_api_key:
-                                try:
-                                    recommended_career, match_score = recommend_career_with_groq(user_skills, interests, active_api_key)
-                                except Exception:
+                                if active_api_key:
+                                    try:
+                                        recommended_career, match_score = recommend_career_with_groq(user_skills, interests, active_api_key)
+                                    except Exception:
+                                        recommended_career, match_score = recommend_career(user_skills)
+                                else:
                                     recommended_career, match_score = recommend_career(user_skills)
-                            else:
-                                recommended_career, match_score = recommend_career(user_skills)
+                                    
+                            # Execute based on selected pathway
+                            if direct_btn:
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute('''
+                                    INSERT INTO user_profiles (session_id, name, email, skills_text, interests, extracted_skills, recommended_career, match_score, submission_type)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                ''', (
+                                    st.session_state["session_id"],
+                                    name,
+                                    email,
+                                    text.strip(),
+                                    interests,
+                                    json.dumps(user_skills),
+                                    recommended_career,
+                                    match_score,
+                                    'resume'
+                                ))
+                                conn.commit()
+                                profile_id = cursor.lastrowid
                                 
-                        # Execute based on selected pathway
-                        if direct_btn:
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute('''
-                                INSERT INTO user_profiles (session_id, name, email, skills_text, interests, extracted_skills, recommended_career, match_score, submission_type)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ''', (
-                                st.session_state["session_id"],
-                                name,
-                                email,
-                                text.strip(),
-                                interests,
-                                json.dumps(user_skills),
-                                recommended_career,
-                                match_score,
-                                'resume'
-                            ))
-                            conn.commit()
-                            profile_id = cursor.lastrowid
-                            
-                            # Save to ChromaDB
-                            advisor.save_user_profile(profile_id, name, email, text.strip(), interests, recommended_career, match_score, 'resume')
-                            conn.close()
-                            
-                            st.session_state["active_profile_id"] = profile_id
-                            st.session_state["autofill_data"] = None
-                            st.rerun()
-                            
-                        elif autofill_btn:
-                            # Save resume temporarily in SQLite under 'resume' type
-                            conn = get_db_connection()
-                            cursor = conn.cursor()
-                            cursor.execute('''
-                                INSERT INTO user_profiles (session_id, name, email, skills_text, interests, extracted_skills, recommended_career, match_score, submission_type)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                            ''', (
-                                st.session_state["session_id"],
-                                name,
-                                email,
-                                text.strip(),
-                                interests,
-                                json.dumps(user_skills),
-                                recommended_career,
-                                match_score,
-                                'resume'
-                            ))
-                            conn.commit()
-                            resume_id = cursor.lastrowid
-                            
-                            # Save to ChromaDB
-                            advisor.save_user_profile(resume_id, name, email, text.strip(), interests, recommended_career, match_score, 'resume')
-                            conn.close()
-                            
-                            # Populate manual form session state
-                            st.session_state["autofill_data"] = {
-                                "name": name,
-                                "email": email,
-                                "skills_text": text.strip(),
-                                "interests": interests,
-                                "resume_profile_id": resume_id,
-                                "target_career": target_career.strip()
-                            }
-                            st.toast("Resume data extracted! Check the Manual Form on the left.")
-                            st.rerun()
+                                # Save to ChromaDB
+                                advisor.save_user_profile(profile_id, name, email, text.strip(), interests, recommended_career, match_score, 'resume')
+                                conn.close()
+                                
+                                st.session_state["active_profile_id"] = profile_id
+                                st.session_state["autofill_data"] = None
+                                st.rerun()
+                                
+                            elif autofill_btn:
+                                # Save resume temporarily in SQLite under 'resume' type
+                                conn = get_db_connection()
+                                cursor = conn.cursor()
+                                cursor.execute('''
+                                    INSERT INTO user_profiles (session_id, name, email, skills_text, interests, extracted_skills, recommended_career, match_score, submission_type)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                ''', (
+                                    st.session_state["session_id"],
+                                    name,
+                                    email,
+                                    text.strip(),
+                                    interests,
+                                    json.dumps(user_skills),
+                                    recommended_career,
+                                    match_score,
+                                    'resume'
+                                ))
+                                conn.commit()
+                                resume_id = cursor.lastrowid
+                                
+                                # Save to ChromaDB
+                                advisor.save_user_profile(resume_id, name, email, text.strip(), interests, recommended_career, match_score, 'resume')
+                                conn.close()
+                                
+                                # Populate manual form session state
+                                st.session_state["autofill_data"] = {
+                                    "name": name,
+                                    "email": email,
+                                    "skills_text": text.strip(),
+                                    "interests": interests,
+                                    "resume_profile_id": resume_id,
+                                    "target_career": target_career.strip()
+                                }
+                                st.toast("Resume data extracted! Check the Manual Form on the left.")
+                                st.rerun()
 
 # ----------------- DISPLAY COMPILATION RESULTS -----------------
 else:

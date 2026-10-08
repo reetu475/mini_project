@@ -11,6 +11,9 @@ import tempfile
 import subprocess
 import xml.etree.ElementTree as ET
 import base64
+import html.parser
+import urllib.parse
+import requests
 
 try:
     from skill_extractor import extract_skills
@@ -520,6 +523,125 @@ def extract_text_from_video(video_bytes, filename="video.mp4", api_key=None):
         print(f"Error extracting audio from video: {e}")
         return ""
 
+# ----------------- HTML & URL EXTRACTION -----------------
+
+class HTMLContentExtractor(html.parser.HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text_parts = []
+        self.ignore_tags = {'script', 'style', 'noscript', 'header', 'footer', 'nav', 'svg', 'iframe'}
+        self.in_ignore = 0
+        self.title = ""
+        self.in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        tag_lower = tag.lower()
+        if tag_lower in self.ignore_tags:
+            self.in_ignore += 1
+        elif tag_lower == 'title':
+            self.in_title = True
+        elif tag_lower in ('p', 'br', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'tr'):
+            self.text_parts.append('\n')
+
+    def handle_endtag(self, tag):
+        tag_lower = tag.lower()
+        if tag_lower in self.ignore_tags:
+            self.in_ignore = max(0, self.in_ignore - 1)
+        elif tag_lower == 'title':
+            self.in_title = False
+        elif tag_lower in ('p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'tr'):
+            self.text_parts.append('\n')
+
+    def handle_data(self, data):
+        if self.in_ignore == 0:
+            cleaned = data.strip()
+            if cleaned:
+                if self.in_title:
+                    self.title = cleaned
+                self.text_parts.append(data)
+
+    def get_text(self):
+        full = ''.join(self.text_parts)
+        full = re.sub(r'[ \t]+', ' ', full)
+        full = re.sub(r'\n\s*\n+', '\n\n', full)
+        return full.strip()
+
+def extract_text_from_url(url, api_key=None):
+    """
+    Fetches and extracts resume/portfolio text from a Web URL.
+    Supports hosted PDF/DOCX, online developer portfolios, GitHub profiles, and image resumes.
+    Returns (extracted_text, media_category_label).
+    """
+    if not url or not str(url).strip():
+        return "", "Invalid URL"
+
+    url = str(url).strip()
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+
+    try:
+        parsed_url = urllib.parse.urlparse(url)
+        domain = parsed_url.netloc or "Web"
+    except Exception:
+        domain = "Web"
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,image/*,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+
+    try:
+        resp = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Network error fetching URL ({url}): {e}")
+        return "", f"URL Fetch Error ({domain})"
+
+    content_type = resp.headers.get('Content-Type', '').lower()
+    path_lower = parsed_url.path.lower()
+
+    # Case 1: Hosted PDF Document
+    if 'application/pdf' in content_type or path_lower.endswith('.pdf'):
+        pdf_text = extract_text_from_pdf(resp.content)
+        return pdf_text, f"Web URL ({domain}) [Hosted PDF]"
+
+    # Case 2: Hosted DOCX Document
+    if 'application/vnd.openxmlformats' in content_type or path_lower.endswith(('.docx', '.doc')):
+        docx_text = extract_text_from_docx(resp.content)
+        return docx_text, f"Web URL ({domain}) [Hosted DOCX]"
+
+    # Case 3: Hosted Image
+    if any(img_t in content_type for img_t in ['image/png', 'image/jpeg', 'image/webp']) or path_lower.endswith(('.png', '.jpg', '.jpeg', '.webp')):
+        if api_key:
+            img_profile = parse_image_resume_with_vision(resp.content, api_key)
+            if img_profile and img_profile.get("raw_text"):
+                return img_profile["raw_text"], f"Web URL ({domain}) [Hosted Image Vision AI]"
+        img_text = extract_text_from_image(resp.content, api_key=api_key)
+        return img_text, f"Web URL ({domain}) [Hosted Image]"
+
+    # Case 4: Webpage HTML / GitHub / Portfolio
+    try:
+        parser = HTMLContentExtractor()
+        encoding = resp.encoding or resp.apparent_encoding or 'utf-8'
+        html_text = resp.content.decode(encoding, errors='replace')
+        parser.feed(html_text)
+        extracted = parser.get_text()
+
+        if parser.title and parser.title not in extracted:
+            extracted = f"{parser.title}\n\n{extracted}"
+
+        if len(extracted) < 30 and len(resp.text) > 30:
+            extracted = re.sub(r'<[^>]+>', ' ', resp.text)
+            extracted = re.sub(r'\s+', ' ', extracted).strip()
+
+        return extracted, f"Web URL ({domain}) [Online Portfolio/Profile]"
+    except Exception as e:
+        print(f"Error parsing HTML from URL ({url}): {e}")
+        fallback_text = re.sub(r'<[^>]+>', ' ', resp.text)
+        fallback_text = re.sub(r'\s+', ' ', fallback_text).strip()
+        return fallback_text, f"Web URL ({domain})"
+
 # ----------------- MULTIMODAL UNIFIED DISPATCHER -----------------
 
 DOCUMENT_EXTENSIONS = {'.pdf', '.docx', '.doc', '.txt'}
@@ -529,13 +651,19 @@ VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi', '.mkv', '.webm'}
 
 def extract_multimodal_text(file_bytes, filename, api_key=None):
     """
-    Identifies the file type and routes it to the optimal extractor.
+    Identifies the file type or URL and routes it to the optimal extractor.
     Returns (extracted_text, media_category_label).
     """
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
 
-    ext = os.path.splitext(filename)[1].lower()
+    # Handle Web URLs directly
+    if (isinstance(filename, str) and filename.startswith(('http://', 'https://'))) or \
+       (isinstance(file_bytes, str) and file_bytes.startswith(('http://', 'https://'))):
+        url = filename if (isinstance(filename, str) and filename.startswith(('http://', 'https://'))) else file_bytes
+        return extract_text_from_url(url, api_key)
+
+    ext = os.path.splitext(filename)[1].lower() if filename else ""
 
     if ext == '.pdf':
         return extract_text_from_pdf(file_bytes), "Document (PDF)"
@@ -684,19 +812,51 @@ def parse_resume_text(text, api_key=None):
         "interests": interests
     }
 
+def parse_url_resume(url, api_key=None):
+    """
+    Fetches a web URL (portfolio, GitHub profile, hosted resume, or direct document)
+    and extracts structured candidate profile information.
+    """
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
+
+    raw_text, media_type = extract_text_from_url(url, api_key=api_key)
+    if not raw_text or len(raw_text.strip()) < 10:
+        return {
+            "name": "Unknown Candidate",
+            "email": "",
+            "skills": [],
+            "interests": "Software Engineering",
+            "raw_text": raw_text or "",
+            "media_type": media_type,
+            "source_url": url
+        }
+
+    profile = parse_resume_text(raw_text, api_key=api_key)
+    profile["raw_text"] = raw_text
+    profile["media_type"] = media_type
+    profile["source_url"] = url
+    return profile
+
 def parse_multimodal_resume(file_bytes, filename, api_key=None):
     """
-    Extracts text from multimodal files (document, image, audio, video)
+    Extracts text from multimodal files (document, image, audio, video, web URL)
     and returns parsed candidate profile with media type metadata.
     Uses ultra-fast single-pass vision for images (~0.5s).
     """
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY") or DEFAULT_GROQ_KEY
 
-    ext = os.path.splitext(filename)[1].lower()
+    # Check for Web URL input
+    if (isinstance(filename, str) and filename.startswith(('http://', 'https://'))) or \
+       (isinstance(file_bytes, str) and file_bytes.startswith(('http://', 'https://'))):
+        url = filename if (isinstance(filename, str) and filename.startswith(('http://', 'https://'))) else file_bytes
+        return parse_url_resume(url, api_key)
+
+    ext = os.path.splitext(filename)[1].lower() if filename else ""
 
     # Fast Single-Pass Vision Path for Image Resumes
-    if ext in IMAGE_EXTENSIONS and api_key:
+    if ext in IMAGE_EXTENSIONS and api_key and file_bytes:
         fast_profile = parse_image_resume_with_vision(file_bytes, api_key)
         if fast_profile and fast_profile.get("raw_text") and len(fast_profile.get("raw_text", "")) > 20:
             fast_profile["media_type"] = f"Image ({ext.replace('.', '').upper()}) [AI Vision Extracted]"
