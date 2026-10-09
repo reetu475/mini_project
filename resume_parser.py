@@ -168,56 +168,70 @@ def extract_text_from_docx(docx_bytes):
     if not docx_bytes or len(docx_bytes) < 10:
         return ""
 
-    # Attempt 1: Standard python-docx
+    is_zip = False
     try:
-        from docx import Document
-        doc = Document(io.BytesIO(docx_bytes))
-        paragraphs = [p.text for p in doc.paragraphs if p.text]
-        for table in doc.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    if cell.text:
-                        paragraphs.append(cell.text)
-        if paragraphs:
-            full_text = "\n".join(paragraphs).strip()
-            if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
-                return full_text
-    except Exception as e:
-        print(f"python-docx extraction notice: {e}")
+        is_zip = zipfile.is_zipfile(io.BytesIO(docx_bytes))
+    except Exception:
+        is_zip = False
 
-    # Attempt 2: Universal OpenXML element iteration (supports all namespaces, textboxes, shapes)
-    try:
-        with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
-            xml_files = [f for f in z.namelist() if f.startswith('word/') and f.endswith('.xml')]
-            extracted_paras = []
-            ordered = ['word/document.xml'] + [f for f in xml_files if f != 'word/document.xml']
-            for xfile in ordered:
-                if xfile not in z.namelist():
-                    continue
-                try:
-                    tree = ET.fromstring(z.read(xfile))
-                    for p in tree.iter():
-                        if p.tag.endswith('}p') or p.tag == 'p':
-                            t_parts = [t.text for t in p.iter() if (t.tag.endswith('}t') or t.tag == 't') and t.text]
-                            if t_parts:
-                                extracted_paras.append("".join(t_parts))
-                except Exception:
-                    continue
-            if extracted_paras:
-                full_text = "\n".join(extracted_paras).strip()
-                if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
+    if is_zip:
+        # Attempt 1: Standard python-docx
+        try:
+            from docx import Document
+            doc = Document(io.BytesIO(docx_bytes))
+            paragraphs = [p.text for p in doc.paragraphs if p.text]
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell.text:
+                            paragraphs.append(cell.text)
+            if paragraphs:
+                full_text = "\n".join(paragraphs).strip()
+                if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) >= 25:
                     return full_text
-    except Exception as e:
-        print(f"DOCX Universal XML fallback notice: {e}")
+        except Exception as e:
+            print(f"python-docx extraction notice: {e}")
 
-    # Attempt 3: Legacy Word 97-2003 (.doc) binary string extraction
+        # Attempt 2: Universal OpenXML (ONLY actual content XMLs: document body, textboxes, headers, footers, notes)
+        try:
+            with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
+                content_xmls = [
+                    'word/document.xml',
+                    'word/header1.xml', 'word/header2.xml', 'word/header3.xml',
+                    'word/footer1.xml', 'word/footer2.xml', 'word/footer3.xml',
+                    'word/footnotes.xml', 'word/endnotes.xml'
+                ]
+                extracted_paras = []
+                for xfile in content_xmls:
+                    if xfile not in z.namelist():
+                        continue
+                    try:
+                        tree = ET.fromstring(z.read(xfile))
+                        for p in tree.iter():
+                            if p.tag.endswith('}p') or p.tag == 'p':
+                                t_parts = [t.text for t in p.iter() if (t.tag.endswith('}t') or t.tag == 't') and t.text]
+                                if t_parts:
+                                    extracted_paras.append("".join(t_parts))
+                    except Exception:
+                        continue
+                if extracted_paras:
+                    full_text = "\n".join(extracted_paras).strip()
+                    if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) >= 25:
+                        return full_text
+        except Exception as e:
+            print(f"DOCX Universal XML fallback notice: {e}")
+
+        # If it is a valid Zip/DOCX file and no text content was found, it is truly EMPTY!
+        return ""
+
+    # Attempt 3: Legacy Word 97-2003 (.doc) binary string extraction ONLY for non-zip files
     try:
         raw_text_chunks = []
         utf16_matches = re.findall(b'(?:[\x20-\x7e]\x00){4,}', docx_bytes)
         for m in utf16_matches:
             try:
                 decoded = m.decode('utf-16le', errors='ignore').strip()
-                if len(decoded) > 3:
+                if len(decoded) > 3 and any(c.isalpha() for c in decoded):
                     raw_text_chunks.append(decoded)
             except Exception:
                 pass
@@ -231,7 +245,7 @@ def extract_text_from_docx(docx_bytes):
                 pass
         if raw_text_chunks:
             full_text = "\n".join(raw_text_chunks)
-            if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
+            if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) >= 25:
                 return full_text
     except Exception:
         pass
@@ -286,12 +300,12 @@ def classify_uploaded_document(text, skills=None, filename=""):
     a resume lacking technical skills, or a valid candidate resume.
     """
     clean_alpha = re.sub(r'[^a-zA-Z0-9]', '', text or '')
-    if len(clean_alpha) < 20:
+    if len(clean_alpha) < 25:
         return {
             'category': 'EMPTY',
             'is_resume': False,
-            'title': 'Empty or Blank Document',
-            'message': 'The uploaded file is empty, blank, or contains no readable text. Please check the file and ensure it contains legible text before uploading.'
+            'title': 'No Content Detected',
+            'message': 'No content is detected which is required to extract.'
         }
 
     text_lower = text.lower()

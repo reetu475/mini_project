@@ -788,12 +788,9 @@ if st.session_state["active_profile_id"] is None:
 
                         if category == "EMPTY":
                             st.error(
-                                "⚠️ **Empty or Blank Document Detected**\n\n"
-                                f"The uploaded {media_type} is empty, blank, or contains no readable text.\n\n"
-                                "**Suggestions:**\n"
-                                "- Verify that the file is not corrupted or 0 bytes.\n"
-                                "- If using a scanned document or image, make sure text is clear and sharp.\n"
-                                "- Ensure text can be selected before uploading."
+                                "⚠️ **No content is detected which is required to extract.**\n\n"
+                                f"The uploaded {media_type} contains no readable or decipherable candidate text. "
+                                "Please ensure your file is not blank or corrupted, and contains legible resume content."
                             )
                         elif category == "ACADEMIC_PAPER":
                             st.error(
