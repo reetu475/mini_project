@@ -777,8 +777,48 @@ if st.session_state["active_profile_id"] is None:
                         text = parsed_profile.get("raw_text", "").strip()
                         media_type = parsed_profile.get("media_type", "Document")
                         
-                        if not text:
-                            st.error(f"Could not extract content from the {media_type} source. Please verify that the link or file is accessible and contains readable text.")
+                        from resume_parser import classify_uploaded_document
+                        doc_filename = uploaded_file.name if uploaded_file is not None else resume_url.strip()
+                        classification = parsed_profile.get("classification") or classify_uploaded_document(
+                            text, 
+                            parsed_profile.get("skills", []), 
+                            filename=doc_filename
+                        )
+                        category = classification.get("category", "VALID_RESUME")
+
+                        if category == "EMPTY":
+                            st.error(
+                                "⚠️ **Empty or Blank Document Detected**\n\n"
+                                f"The uploaded {media_type} is empty, blank, or contains no readable text.\n\n"
+                                "**Suggestions:**\n"
+                                "- Verify that the file is not corrupted or 0 bytes.\n"
+                                "- If using a scanned document or image, make sure text is clear and sharp.\n"
+                                "- Ensure text can be selected before uploading."
+                            )
+                        elif category == "ACADEMIC_PAPER":
+                            st.error(
+                                "📄 **Non-Resume Document Detected: Academic Research Paper / Format Template**\n\n"
+                                "The uploaded file appears to be an **academic research paper, IEEE format template, or publication manuscript** "
+                                "rather than a candidate resume or curriculum vitae.\n\n"
+                                "Academic markers (such as *Abstract*, *Keywords*, *References*, *Conference Guidelines*, or equation formats) were detected "
+                                "without standard candidate employment or education history.\n\n"
+                                "👉 **What to do:** Please upload a student or professional **curriculum vitae (CV)** or **resume** (PDF, DOCX, or TXT), "
+                                "or use the **Manual Profile Form** on the left to enter your skills directly."
+                            )
+                        elif category == "NON_RESUME":
+                            st.error(
+                                "📄 **Non-Resume Document Detected: General Document**\n\n"
+                                f"The uploaded {media_type} contains text, but **does not appear to be a candidate resume or CV**.\n\n"
+                                "No standard candidate profile sections (*Experience*, *Education*, *Projects*) or technical proficiencies were detected.\n\n"
+                                "👉 **What to do:** Please upload a valid candidate resume, or use the **Manual Profile Form** on the left to specify your skills and interests."
+                            )
+                        elif category == "RESUME_NO_SKILLS" and direct_btn:
+                            st.warning(
+                                "⚠️ **Candidate Resume Detected, But No Technical Skills Found**\n\n"
+                                "Candidate profile structure was detected, but no matching technical skills from our taxonomy were identified in the document.\n\n"
+                                "👉 **Action Required:** Please click **'Extract & Edit Form'** or use the **Manual Profile Form** on the left "
+                                "to select your technical skills so an accurate career compatibility match can be computed."
+                            )
                         else:
                             st.success(f"Processed: **{media_type}**")
                             name = parsed_profile.get("name", "Resume Candidate").strip()
@@ -874,7 +914,10 @@ if st.session_state["active_profile_id"] is None:
                                     "resume_profile_id": resume_id,
                                     "target_career": target_career.strip()
                                 }
-                                st.toast("Resume data extracted! Check the Manual Form on the left.")
+                                if category == "RESUME_NO_SKILLS":
+                                    st.toast("Profile extracted! Please select technical skills in the Manual Form.")
+                                else:
+                                    st.toast("Resume data extracted! Check the Manual Form on the left.")
                                 st.rerun()
 
 # ----------------- DISPLAY COMPILATION RESULTS -----------------

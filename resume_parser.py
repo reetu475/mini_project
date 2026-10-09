@@ -161,9 +161,14 @@ def extract_text_from_pdf(pdf_bytes):
 
 def extract_text_from_docx(docx_bytes):
     """
-    Extracts text from a DOCX file using python-docx.
-    Falls back to direct XML parsing if needed.
+    Extracts text from a DOCX or DOC file.
+    Supports standard python-docx, universal OpenXML (including non-standard XML namespaces,
+    w:txbxContent textboxes, shapes, headers, footers, endnotes), and legacy Word 97-2003 OLE binary streams.
     """
+    if not docx_bytes or len(docx_bytes) < 10:
+        return ""
+
+    # Attempt 1: Standard python-docx
     try:
         from docx import Document
         doc = Document(io.BytesIO(docx_bytes))
@@ -174,25 +179,177 @@ def extract_text_from_docx(docx_bytes):
                     if cell.text:
                         paragraphs.append(cell.text)
         if paragraphs:
-            return "\n".join(paragraphs).strip()
+            full_text = "\n".join(paragraphs).strip()
+            if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
+                return full_text
     except Exception as e:
         print(f"python-docx extraction notice: {e}")
 
-    # Fallback to direct word/document.xml parsing
+    # Attempt 2: Universal OpenXML element iteration (supports all namespaces, textboxes, shapes)
     try:
         with zipfile.ZipFile(io.BytesIO(docx_bytes)) as z:
-            xml_content = z.read('word/document.xml')
-            tree = ET.fromstring(xml_content)
-            ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
-            paragraphs = []
-            for p_node in tree.findall('.//w:p', ns):
-                p_text = [t.text for t in p_node.findall('.//w:t', ns) if t.text]
-                if p_text:
-                    paragraphs.append("".join(p_text))
-            return "\n".join(paragraphs).strip()
+            xml_files = [f for f in z.namelist() if f.startswith('word/') and f.endswith('.xml')]
+            extracted_paras = []
+            ordered = ['word/document.xml'] + [f for f in xml_files if f != 'word/document.xml']
+            for xfile in ordered:
+                if xfile not in z.namelist():
+                    continue
+                try:
+                    tree = ET.fromstring(z.read(xfile))
+                    for p in tree.iter():
+                        if p.tag.endswith('}p') or p.tag == 'p':
+                            t_parts = [t.text for t in p.iter() if (t.tag.endswith('}t') or t.tag == 't') and t.text]
+                            if t_parts:
+                                extracted_paras.append("".join(t_parts))
+                except Exception:
+                    continue
+            if extracted_paras:
+                full_text = "\n".join(extracted_paras).strip()
+                if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
+                    return full_text
     except Exception as e:
-        print(f"DOCX XML fallback error: {e}")
-        return ""
+        print(f"DOCX Universal XML fallback notice: {e}")
+
+    # Attempt 3: Legacy Word 97-2003 (.doc) binary string extraction
+    try:
+        raw_text_chunks = []
+        utf16_matches = re.findall(b'(?:[\x20-\x7e]\x00){4,}', docx_bytes)
+        for m in utf16_matches:
+            try:
+                decoded = m.decode('utf-16le', errors='ignore').strip()
+                if len(decoded) > 3:
+                    raw_text_chunks.append(decoded)
+            except Exception:
+                pass
+        ascii_matches = re.findall(b'[\x20-\x7e\r\n\t]{4,}', docx_bytes)
+        for m in ascii_matches:
+            try:
+                decoded = m.decode('ascii', errors='ignore').strip()
+                if len(decoded) > 4 and any(c.isalpha() for c in decoded):
+                    raw_text_chunks.append(decoded)
+            except Exception:
+                pass
+        if raw_text_chunks:
+            full_text = "\n".join(raw_text_chunks)
+            if len(re.sub(r'[^a-zA-Z0-9]', '', full_text)) > 20:
+                return full_text
+    except Exception:
+        pass
+
+    return ""
+
+# ----------------- DOCUMENT TYPE CLASSIFIER -----------------
+
+ACADEMIC_PAPER_PATTERNS = [
+    r'\babstract\s*[-—–]',
+    r'\babstract\b',
+    r'\bkeywords\s*[-—–]',
+    r'\bkeywords\b',
+    r'\bintroduction\s*\(\s*heading',
+    r'\bpaper title\b',
+    r'\bieee\b',
+    r'\bconference\s+(?:proceedings|template)\b',
+    r'\bdoi\s*:\b',
+    r'\breferences\b',
+    r'\bauthor\s+(?:names?|sequence)\b',
+    r'\bdept\.\s+name\s+of\s+organization\b',
+    r'\bet\s+al\.\b',
+    r'\bindex\s+terms\b',
+    r'\btable\s+footnote\b',
+    r'\bfigure\s+caption\b',
+    r'\bequations?\s+\(\s*1\s*\)',
+    r'\bsub-titles\s+are\s+not\s+captured\b',
+    r'\btrans(?:\.|\s+)on\b',
+    r'\bcall\s+for\s+papers\b',
+    r'\bproceedings\s+of\s+the\b',
+    r'\bvol\.\s*\d+,\s*no\.\s*\d+\b'
+]
+
+RESUME_SECTION_PATTERNS = [
+    r'\b(?:work|professional|relevant|industry)\s*experience\b',
+    r'\beducation\b',
+    r'\bprojects?\b',
+    r'\btechnical\s+skills\b',
+    r'\bskills\s*(?:&|and)\s*abilities\b',
+    r'\bemployment\s+history\b',
+    r'\bcareer\s+objective\b',
+    r'\bprofessional\s+summary\b',
+    r'\bcertifications?\b',
+    r'\bcurriculum\s+vitae\b',
+    r'\bresume\b'
+]
+
+def classify_uploaded_document(text, skills=None, filename=""):
+    """
+    Evaluates whether the uploaded text is an empty document, an academic paper or format template
+    (e.g., IEEE conference paper), a general non-resume document (essay, terms, recipe),
+    a resume lacking technical skills, or a valid candidate resume.
+    """
+    clean_alpha = re.sub(r'[^a-zA-Z0-9]', '', text or '')
+    if len(clean_alpha) < 20:
+        return {
+            'category': 'EMPTY',
+            'is_resume': False,
+            'title': 'Empty or Blank Document',
+            'message': 'The uploaded file is empty, blank, or contains no readable text. Please check the file and ensure it contains legible text before uploading.'
+        }
+
+    text_lower = text.lower()
+    skills = skills or []
+
+    academic_hits = [p for p in ACADEMIC_PAPER_PATTERNS if re.search(p, text_lower)]
+    resume_hits = [p for p in RESUME_SECTION_PATTERNS if re.search(p, text_lower)]
+
+    fname_lower = (filename or '').lower()
+    is_academic_fname = bool(re.search(r'\bieee\b|\bpaper\b|\btemplate\b|\bmanuscript\b|\bproceedings\b|\bconference\b', fname_lower))
+
+    # Academic research paper or publication template
+    if (len(academic_hits) >= 3 and len(resume_hits) <= 2) or \
+       (is_academic_fname and len(academic_hits) >= 1 and len(resume_hits) <= 2) or \
+       (len(academic_hits) >= 2 and len(resume_hits) == 0):
+        return {
+            'category': 'ACADEMIC_PAPER',
+            'is_resume': False,
+            'title': 'Academic Research Paper / Format Template',
+            'message': (
+                'The uploaded file appears to be an academic research paper, IEEE format template, '
+                'or publication manuscript rather than a candidate resume. Academic markers (such as Abstract, '
+                'Keywords, References, or Conference Formatting Guidelines) were detected without candidate '
+                'employment or education history. Please upload a student or professional resume.'
+            )
+        }
+
+    # General non-resume document (terms, essay, manual, recipe)
+    if len(resume_hits) == 0 and len(skills) <= 1:
+        return {
+            'category': 'NON_RESUME',
+            'is_resume': False,
+            'title': 'Non-Resume Document',
+            'message': (
+                'The uploaded file contains text, but does not appear to be a candidate resume or CV. '
+                'No standard candidate profile sections (Experience, Education, Projects) or technical skills were identified. '
+                'Please upload a resume, or use the Manual Profile Form below.'
+            )
+        }
+
+    # Resume detected but without technical skills
+    if len(skills) == 0:
+        return {
+            'category': 'RESUME_NO_SKILLS',
+            'is_resume': True,
+            'title': 'Resume (No Technical Skills Detected)',
+            'message': (
+                'Candidate resume structure was detected, but no matching technical skills from our taxonomy '
+                'were found. Please ensure your technical proficiencies are clearly listed, or use the Manual Profile Form.'
+            )
+        }
+
+    return {
+        'category': 'VALID_RESUME',
+        'is_resume': True,
+        'title': 'Valid Candidate Resume',
+        'message': f'Valid candidate resume with {len(skills)} technical skills identified.'
+    }
 
 def extract_text_from_txt(txt_bytes):
     """Decodes raw text bytes into string."""
@@ -829,13 +986,16 @@ def parse_url_resume(url, api_key=None):
             "interests": "Software Engineering",
             "raw_text": raw_text or "",
             "media_type": media_type,
-            "source_url": url
+            "source_url": url,
+            "classification": classify_uploaded_document(raw_text or "", [], filename=url)
         }
 
     profile = parse_resume_text(raw_text, api_key=api_key)
+    classification = classify_uploaded_document(raw_text, profile.get("skills", []), filename=url)
     profile["raw_text"] = raw_text
     profile["media_type"] = media_type
     profile["source_url"] = url
+    profile["classification"] = classification
     return profile
 
 def parse_multimodal_resume(file_bytes, filename, api_key=None):
@@ -860,12 +1020,19 @@ def parse_multimodal_resume(file_bytes, filename, api_key=None):
         fast_profile = parse_image_resume_with_vision(file_bytes, api_key)
         if fast_profile and fast_profile.get("raw_text") and len(fast_profile.get("raw_text", "")) > 20:
             fast_profile["media_type"] = f"Image ({ext.replace('.', '').upper()}) [AI Vision Extracted]"
+            fast_profile["classification"] = classify_uploaded_document(
+                fast_profile.get("raw_text", ""), 
+                fast_profile.get("skills", []), 
+                filename=filename or ""
+            )
             return fast_profile
 
     raw_text, media_type = extract_multimodal_text(file_bytes, filename, api_key)
     profile = parse_resume_text(raw_text, api_key)
+    classification = classify_uploaded_document(raw_text, profile.get("skills", []), filename=filename or "")
     return {
         **profile,
         "raw_text": raw_text,
-        "media_type": media_type
+        "media_type": media_type,
+        "classification": classification
     }
